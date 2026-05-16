@@ -1,3 +1,0 @@
-/home/usuario/Documentos/2026A/Compiladores/Compilador-dislexia/build/CMakeFiles/compilador.dir
-/home/usuario/Documentos/2026A/Compiladores/Compilador-dislexia/build/CMakeFiles/edit_cache.dir
-/home/usuario/Documentos/2026A/Compiladores/Compilador-dislexia/build/CMakeFiles/rebuild_cache.dir
