@@ -1,6 +1,6 @@
 EJEMPLO DE ARCHIVO prueba1.txt:
 El niño bebe agua.
-La pelota es roja. Estoy sin energìa k@gmail.com
+La pelota es roja. Estoy sin energìa k@gmail.com. 
 ¿Dónde está el libro?
 - Que hará José hoy.
 "hOY".
@@ -11,3 +11,6 @@ ARCHIVO1.txt (ejemplo)
 estoy sin ejemploss...
 (2 + 3)... no funciona.
 7.2 así
+123-923
+estoy -sin ejemplos-
+-

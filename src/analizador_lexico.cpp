@@ -109,8 +109,7 @@ string nombreTipo(TipoToken tipo) {
     return "TOKEN_???";
 }
 
-AnalizadorLexico::AnalizadorLexico(const string& rutaArchivo)
-    : pos(0), lineaActual(1), columnaActual(1),
+AnalizadorLexico::AnalizadorLexico(const string& rutaArchivo) : pos(0), lineaActual(1), columnaActual(1),
       esperandoInicioOracion(true),
       esperandoInicioLinea(true),
       esperandoInicioParrafo(true),
@@ -323,9 +322,13 @@ Token AnalizadorLexico::siguienteToken() {
         if (multibyte.tipo == TipoToken::SIGNO_INTERR_INI || multibyte.tipo == TipoToken::SIGNO_EXCL_INI) {
             esperandoInicioOracion = true;
         }
-        // la raya (—) actua como inicio de dialogo, marca inicio de oracion
+        // la raya (—) marca inicio de oracion como dialogo, excepto si esta entre dos digitos
         if (multibyte.tipo == TipoToken::RAYA) {
-            esperandoInicioOracion = true;
+            char anteriorR = (pos >= 4) ? contenido[pos - 4] : '\0';
+            char siguienteR = actual();
+            if (!(esDigito((unsigned char)anteriorR) && esDigito((unsigned char)siguienteR))) {
+                esperandoInicioOracion = true;
+            }
         }
         // si el signo multibyte es de apertura, no consume las banderas de contexto, las deja activas para que la primera palabra real las reciba
         if (!esSignoDeApertura(multibyte.tipo)) {
@@ -373,9 +376,17 @@ Token AnalizadorLexico::siguienteToken() {
         else if (tipo == TipoToken::SIGNO_INTERR_FIN || tipo == TipoToken::SIGNO_EXCL_FIN || tipo == TipoToken::DOS_PUNTOS) 
             marcarInicioOracion = true;
 
-        // el guion ASCII (-) al inicio de linea indica dialogo
+        // el guion (-) marca inicio de oracion como dialogo o cita, excepto si esta entre dos digitos (ej: 999-123-456 telefono) o si no le sigue un espacio
+        // (ej: -esta roto- es cita en medio de oracion, no dialogo)
+
         else if (tipo == TipoToken::GUION) {
-            marcarInicioOracion = true;
+            char anteriorG = (pos >= 2) ? contenido[pos - 2] : '\0';
+            char siguienteG = actual();
+            bool entreDigitos = esDigito((unsigned char)anteriorG) && esDigito((unsigned char)siguienteG);
+            bool sigueEspacio = (siguienteG == ' ' || siguienteG == '\t');
+            if (!entreDigitos && sigueEspacio) {
+                marcarInicioOracion = true;
+            }
         }
 
         if (marcarInicioOracion) 
@@ -411,7 +422,8 @@ BufferTokens AnalizadorLexico::tokenizar() {
     while (true) {
         // deteccion de puntos suspensivos con lookahead de 2 posiciones: si el caracter actual y los dos siguientes son '.', se consume como una unidad y marca inicio de oracion 
         if (actual() == '.' &&
-            pos + 1 < contenido.size() && contenido[pos + 1] == '.' && pos + 2 < contenido.size() && contenido[pos + 2] == '.') {
+            pos + 1 < contenido.size() && contenido[pos + 1] == '.' &&
+            pos + 2 < contenido.size() && contenido[pos + 2] == '.') {
 
             int linea = lineaActual;
             int col = columnaActual;
