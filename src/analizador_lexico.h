@@ -10,6 +10,7 @@ enum class TipoToken {
     NUMERO,
     COMA,
     PUNTO,
+    PUNTOS_SUSPENSIVOS, //...
     PUNTO_Y_COMA,
     DOS_PUNTOS,
     SIGNO_INTERR_INI, // ¿
@@ -21,7 +22,10 @@ enum class TipoToken {
     PARENTESIS_FIN, // )
     CORCHETE_INI,   // [
     CORCHETE_FIN,   // ]
+    LLAVE_INI,   // {
+    LLAVE_FIN,   // }
     MAS,        // +
+    GUION,      // -
     IGUAL,      // =
     MAYOR_QUE,      // >
     MENOR_QUE,      // <
@@ -49,31 +53,80 @@ enum class TipoToken {
 
 struct Token {
     TipoToken tipo;
-    string valor;
+    string valorOriginal;
+    string valorNormal;
+    int linea;
+    int columna;
+
+    bool inicioOracion;
+    bool inicioLinea;
+    bool inicioParrafo;
+};
+
+struct ErrorLexico {
+    string descripcion;
     int linea;
     int columna;
 };
 
-class AnalizadorLexico {
-public:
-    explicit AnalizadorLexico(const string& rutaArchivo);
-    vector<Token> tokenizar();
+class AnalizadorLexico;
 
-private:
+class BufferTokens {
+ public:
+    explicit BufferTokens(vector<Token> tokens);
+
+    Token siguiente();
+    Token ver(int adelanto = 0);
+    void retroceder();
+    bool hayMas() const;
+
+ private:
+    vector<Token> tokens;
+    size_t pos;
+};
+
+class AnalizadorLexico {
+ public:
+    explicit AnalizadorLexico(const string& rutaArchivo);
+
+    BufferTokens tokenizar();
+
+    const vector<ErrorLexico>& obtenerErrores() const;
+    bool tieneErrores() const;
+
+ private:
     string contenido;
     size_t pos;
+
     int lineaActual;
     int columnaActual;
 
+    bool esperandoInicioOracion;
+    bool esperandoInicioLinea;
+    bool esperandoInicioParrafo;
+
+    int saltosConsecutivos;
+
+    vector<ErrorLexico> errores;
+
     bool cargarArchivo(const string& ruta);
+
     Token siguienteToken();
+
     bool esPalabraChar(unsigned char c);
     bool esDigito(unsigned char c);
     void avanzar();
     char actual();
     Token leerPalabra(int linea, int col);
     Token leerNumero(int linea, int col);
-    Token leerMultibyte(int linea, int col);
+    bool leerSignoMultibyte(int linea, int col, Token& resultado);
+    string normalizar(const string& texto);
+    void registrarError(const string& desc, int linea, int col);
+
+    // devuelve true si el tipo de token es un signo de apertura
+    bool esSignoDeApertura(TipoToken tipo) const;
 };
+
+string nombreTipo(TipoToken tipo);
 
 #endif

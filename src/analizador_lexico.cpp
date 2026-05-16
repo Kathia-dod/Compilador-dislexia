@@ -4,9 +4,117 @@
 #include <iostream>
 #include <stdexcept>
 #include <cctype>
+#include <unordered_map>
 using namespace std;
 
-AnalizadorLexico::AnalizadorLexico(const string& rutaArchivo) : pos(0), lineaActual(1), columnaActual(1) {
+// map de signos ASCII
+static const unordered_map<char, TipoToken> MAP_ASCII = {
+    {',', TipoToken::COMA},
+    {'.', TipoToken::PUNTO},
+    {';', TipoToken::PUNTO_Y_COMA},
+    {':', TipoToken::DOS_PUNTOS},
+    {'?', TipoToken::SIGNO_INTERR_FIN},
+    {'!', TipoToken::SIGNO_EXCL_FIN},
+    {'_', TipoToken::GUION_BAJO},
+    {'(', TipoToken::PARENTESIS_INI},
+    {')', TipoToken::PARENTESIS_FIN},
+    {'[', TipoToken::CORCHETE_INI},
+    {']', TipoToken::CORCHETE_FIN},
+    {'{', TipoToken::LLAVE_INI},
+    {'}', TipoToken::LLAVE_FIN},
+    {'+', TipoToken::MAS},
+    {'-', TipoToken::GUION},
+    {'=', TipoToken::IGUAL},
+    {'>', TipoToken::MAYOR_QUE},
+    {'<', TipoToken::MENOR_QUE},
+    {'/', TipoToken::BARRA},
+    {'&', TipoToken::AMPERSAND},
+    {'\'', TipoToken::COMILLA_SIMPLE},
+    {'"', TipoToken::COMILLA_DOBLE},
+    {'*', TipoToken::ASTERISCO},
+    {'\\', TipoToken::BARRA_INVERTIDA},
+    {'@', TipoToken::ARROBA},
+    {'#', TipoToken::NUMERAL},
+    {'~', TipoToken::VIRGULILLA},
+    {'$', TipoToken::DOLAR},
+    {'%', TipoToken::PORCENTAJE}, 
+    
+};
+
+// map de signos multibyte UTF-8, secuencia de bytes como string, valor: TipoToken, simbolo
+struct InfoMultibyte {
+    TipoToken tipo;
+    string representacion;
+};
+
+static const vector<pair<string, InfoMultibyte>> MAP_MULTIBYTE = {
+    {string("\xC2\xBF"), {TipoToken::SIGNO_INTERR_INI, "¿"}},
+    {string("\xC2\xA1"), {TipoToken::SIGNO_EXCL_INI, "¡"}},
+    {string("\xC2\xAB"), {TipoToken::COMILLA_ANGULAR_INI, "«"}},
+    {string("\xC2\xBB"), {TipoToken::COMILLA_ANGULAR_FIN, "»"}},
+    {string("\xE2\x82\xAC"), {TipoToken::EURO, "€"}},
+    {string("\xE2\x89\xA0"), {TipoToken::DIFERENTE, "≠"}},
+    {string("\xE2\x80\x94"), {TipoToken::RAYA, "—"}},
+};
+
+string nombreTipo(TipoToken tipo) {
+    static const unordered_map<TipoToken, string> nombres = {
+        {TipoToken::PALABRA, "TOKEN_PALABRA"},
+        {TipoToken::NUMERO, "TOKEN_NUMERO"},
+        {TipoToken::COMA, "TOKEN_COMA"},
+        {TipoToken::PUNTO, "TOKEN_PUNTO"},
+        {TipoToken::PUNTOS_SUSPENSIVOS, "TOKEN_PUNTOS_SUSPENSIVOS"},
+        {TipoToken::PUNTO_Y_COMA, "TOKEN_PUNTO_Y_COMA"},
+        {TipoToken::DOS_PUNTOS, "TOKEN_DOS_PUNTOS"},
+        {TipoToken::SIGNO_INTERR_INI, "TOKEN_INTERR_INI"},
+        {TipoToken::SIGNO_INTERR_FIN, "TOKEN_INTERR_FIN"},
+        {TipoToken::SIGNO_EXCL_INI, "TOKEN_EXCL_INI"},
+        {TipoToken::SIGNO_EXCL_FIN, "TOKEN_EXCL_FIN"},
+        {TipoToken::GUION_BAJO, "TOKEN_GUION_BAJO"},
+        {TipoToken::PARENTESIS_INI, "TOKEN_PARENTESIS_INI"},
+        {TipoToken::PARENTESIS_FIN, "TOKEN_PARENTESIS_FIN"},
+        {TipoToken::CORCHETE_INI, "TOKEN_CORCHETE_INI"},
+        {TipoToken::CORCHETE_FIN, "TOKEN_CORCHETE_FIN"},
+        {TipoToken::LLAVE_INI, "TOKEN_LLAVE_INI"},
+        {TipoToken::LLAVE_FIN, "TOKEN_LLAVE_FIN"},
+        {TipoToken::MAS, "TOKEN_MAS"},
+        {TipoToken::GUION, "TOKEN_GUION"},
+        {TipoToken::IGUAL, "TOKEN_IGUAL"},
+        {TipoToken::MAYOR_QUE, "TOKEN_MAYOR_QUE"},
+        {TipoToken::MENOR_QUE, "TOKEN_MENOR_QUE"},
+        {TipoToken::BARRA, "TOKEN_BARRA"},
+        {TipoToken::AMPERSAND, "TOKEN_AMPERSAND"},
+        {TipoToken::COMILLA_SIMPLE, "TOKEN_COMILLA_SIMPLE"},
+        {TipoToken::COMILLA_DOBLE, "TOKEN_COMILLA_DOBLE"},
+        {TipoToken::ASTERISCO, "TOKEN_ASTERISCO"},
+        {TipoToken::BARRA_INVERTIDA, "TOKEN_BARRA_INVERTIDA"},
+        {TipoToken::ARROBA, "TOKEN_ARROBA"},
+        {TipoToken::NUMERAL, "TOKEN_NUMERAL"},
+        {TipoToken::VIRGULILLA, "TOKEN_VIRGULILLA"},
+        {TipoToken::DOLAR, "TOKEN_DOLAR"},
+        {TipoToken::EURO, "TOKEN_EURO"},
+        {TipoToken::PORCENTAJE, "TOKEN_PORCENTAJE"},
+        {TipoToken::DIFERENTE, "TOKEN_DIFERENTE"},
+        {TipoToken::COMILLA_ANGULAR_INI, "TOKEN_COMILLA_ANGULAR_INI"},
+        {TipoToken::COMILLA_ANGULAR_FIN, "TOKEN_COMILLA_ANGULAR_FIN"},
+        {TipoToken::RAYA, "TOKEN_RAYA"},
+        {TipoToken::SALTO_LINEA, "TOKEN_SALTO_LINEA"},
+        {TipoToken::ESPACIO, "TOKEN_ESPACIO"},
+        {TipoToken::DESCONOCIDO, "TOKEN_DESCONOCIDO"},
+        {TipoToken::FIN_ARCHIVO, "TOKEN_FIN_ARCHIVO"},
+    };
+
+    auto it = nombres.find(tipo);
+    if (it != nombres.end()) return it->second;
+    return "TOKEN_???";
+}
+
+AnalizadorLexico::AnalizadorLexico(const string& rutaArchivo)
+    : pos(0), lineaActual(1), columnaActual(1),
+      esperandoInicioOracion(true),
+      esperandoInicioLinea(true),
+      esperandoInicioParrafo(true),
+      saltosConsecutivos(0) {
     if (!cargarArchivo(rutaArchivo)) {
         throw runtime_error("No se pudo abrir el archivo: " + rutaArchivo);
     }
@@ -31,6 +139,12 @@ void AnalizadorLexico::avanzar() {
         if (contenido[pos] == '\n') {
             lineaActual++;
             columnaActual = 1;
+            // al encontrar un salto de linea se activa la bandera de inicio de linea y se cuenta cuantos saltos consecutivos hay para detectar parrafos
+            esperandoInicioLinea = true;
+            saltosConsecutivos++;
+            if (saltosConsecutivos >= 2) {
+                esperandoInicioParrafo = true;
+            }
         } else {
             columnaActual++;
         }
@@ -38,35 +152,108 @@ void AnalizadorLexico::avanzar() {
     }
 }
 
+void AnalizadorLexico::registrarError(const string& desc, int linea, int col) {
+    errores.push_back({desc, linea, col});
+}
+
+const vector<ErrorLexico>& AnalizadorLexico::obtenerErrores() const {
+    return errores;
+}
+
+bool AnalizadorLexico::tieneErrores() const {
+    return !errores.empty();
+}
+
 bool AnalizadorLexico::esPalabraChar(unsigned char c) {
-    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c > 127);
+    if (c >= 'a' && c <= 'z') return true;
+    if (c >= 'A' && c <= 'Z') return true;
+    if (c < 128) return false;
+
+    for (const auto& entrada : MAP_MULTIBYTE) {
+        const string& sec = entrada.first;
+        if (!sec.empty() && (unsigned char)sec[0] == c) {
+            return false;
+        }
+    }
+
+    return true; 
 }
 
 bool AnalizadorLexico::esDigito(unsigned char c) {
     return c >= '0' && c <= '9';
 }
 
+// normaliza a minusculas respetando multibyte
+string AnalizadorLexico::normalizar(const string& texto) {
+    string resultado = "";
+    size_t i = 0;
+    while (i < texto.size()) {
+        unsigned char uc = (unsigned char)texto[i];
+        if (uc < 128) {
+            resultado += (char)tolower(texto[i]);
+            i++;
+        } else {
+            // caracteres multibyte se copian sin tocar
+            int bytes = 1;
+            if ((uc & 0xE0) == 0xC0) bytes = 2;
+            else if ((uc & 0xF0) == 0xE0) bytes = 3;
+            else if ((uc & 0xF8) == 0xF0) bytes = 4;
+            for (int j = 0; j < bytes && i < texto.size(); j++, i++) {
+                resultado += texto[i];
+            }
+        }
+    }
+    return resultado;
+}
+
+// devuelve true si el token es un signo de apertura
+bool AnalizadorLexico::esSignoDeApertura(TipoToken tipo) const {
+    switch (tipo) {
+        case TipoToken::PARENTESIS_INI:
+        case TipoToken::CORCHETE_INI:
+        case TipoToken::LLAVE_INI:
+        case TipoToken::COMILLA_SIMPLE:
+        case TipoToken::COMILLA_DOBLE:
+        case TipoToken::COMILLA_ANGULAR_INI:
+        case TipoToken::SIGNO_INTERR_INI:
+        case TipoToken::SIGNO_EXCL_INI:
+            return true;
+        default:
+            return false;
+    }
+}
+
+// lee la palabra guardando: original y normalizada
 Token AnalizadorLexico::leerPalabra(int linea, int col) {
-    string palabra = "";
+    string original = "";
+
     while (pos < contenido.size() && esPalabraChar((unsigned char)actual())) {
         unsigned char uc = (unsigned char)actual();
         if (uc < 128) {
-            palabra += (char)tolower(actual());
+            original += actual();
             avanzar();
         } else {
-            // Detectar cuantos bytes ocupa el caracter UTF-8
             int bytes = 1;
-            if((uc & 0xE0) == 0xC0) bytes = 2;
-            else if((uc & 0xF0) == 0xE0) bytes = 3;
-            else if((uc & 0xF8) == 0xF0) bytes = 4;
-
+            if ((uc & 0xE0) == 0xC0) bytes = 2;
+            else if ((uc & 0xF0) == 0xE0) bytes = 3;
+            else if ((uc & 0xF8) == 0xF0) bytes = 4;
             for (int i = 0; i < bytes && pos < contenido.size(); i++) {
-                palabra += actual();
+                original += actual();
                 avanzar();
             }
         }
     }
-    return {TipoToken::PALABRA, palabra, linea, col};
+
+    bool esInicioOracion = esperandoInicioOracion;
+    bool esInicioLinea = esperandoInicioLinea;
+    bool esInicioParrafo = esperandoInicioParrafo;
+
+    esperandoInicioOracion = false;
+    esperandoInicioLinea = false;
+    esperandoInicioParrafo = false;
+    saltosConsecutivos = 0;
+
+    return {TipoToken::PALABRA, original, normalizar(original), linea, col, esInicioOracion, esInicioLinea, esInicioParrafo};
 }
 
 Token AnalizadorLexico::leerNumero(int linea, int col) {
@@ -75,7 +262,34 @@ Token AnalizadorLexico::leerNumero(int linea, int col) {
         num += actual();
         avanzar();
     }
-    return {TipoToken::NUMERO, num, linea, col};
+    // los numeros marcan INICIO_LINEA
+    bool esInicioOracion = esperandoInicioOracion;
+    bool esInicioLinea = esperandoInicioLinea;
+    bool esInicioParrafo = esperandoInicioParrafo;
+
+    esperandoInicioOracion = false;
+    esperandoInicioLinea = false;
+    esperandoInicioParrafo = false;
+    saltosConsecutivos = 0;
+
+    return {TipoToken::NUMERO, num, num, linea, col, esInicioOracion, esInicioLinea, esInicioParrafo};
+}
+
+// lógica multibyte 
+bool AnalizadorLexico::leerSignoMultibyte(int linea, int col, Token& resultado) {
+    for (const auto& entrada : MAP_MULTIBYTE) {
+        const string& secuencia = entrada.first;
+        const InfoMultibyte& info = entrada.second;
+        size_t len = secuencia.size();
+
+        if (pos + len <= contenido.size() && contenido.substr(pos, len) == secuencia) {
+            for (size_t i = 0; i < len; i++) 
+                avanzar();
+            resultado = {info.tipo, info.representacion, info.representacion, linea, col, false, false, false};
+            return true;
+        }
+    }
+    return false;
 }
 
 Token AnalizadorLexico::siguienteToken() {
@@ -83,95 +297,160 @@ Token AnalizadorLexico::siguienteToken() {
     int linea = lineaActual;
     int col = columnaActual;
 
-    if (c == '\0') return {TipoToken::FIN_ARCHIVO, "", linea, col};
+    if (c == '\0') return {TipoToken::FIN_ARCHIVO, "", "", linea, col, false, false, false};
 
-// Espacio en blanco, tabulacion, salto de linea
     if (c == ' ' || c == '\t') {
         avanzar();
-        return {TipoToken::ESPACIO, " ", linea, col};
+        return {TipoToken::ESPACIO, " ", " ", linea, col, false, false, false};
     }
 
     if (c == '\n') {
         avanzar();
-        return {TipoToken::SALTO_LINEA, "\\n", linea, col};
+        return {TipoToken::SALTO_LINEA, "\\n", "\\n", linea, col, false, false, false};
     }
 
-// Palabras normales o con UTF-8
     if (esPalabraChar((unsigned char)c)) {
         return leerPalabra(linea, col);
     }
 
-// Numeros
     if (esDigito((unsigned char)c)) {
         return leerNumero(linea, col);
     }
 
-// Signos multibyte UTF-8
-    if ((unsigned char)c == 0xC2 && pos + 1 < contenido.size()) {
-        unsigned char sig = (unsigned char)contenido[pos + 1];
-        if (sig == 0xBF) { avanzar(); avanzar(); return {TipoToken::SIGNO_INTERR_INI, "¿", linea, col}; }
-        if (sig == 0xA1) { avanzar(); avanzar(); return {TipoToken::SIGNO_EXCL_INI, "¡", linea, col}; }
-        if (sig == 0xAB) { avanzar(); avanzar(); return {TipoToken::COMILLA_ANGULAR_INI, "«", linea, col}; }
-        if (sig == 0xBB) { avanzar(); avanzar(); return {TipoToken::COMILLA_ANGULAR_FIN, "»", linea, col}; }
+    // intentar multibyte antes de ASCII
+    Token multibyte;
+    if (leerSignoMultibyte(linea, col, multibyte)) {
+        if (multibyte.tipo == TipoToken::SIGNO_INTERR_INI || multibyte.tipo == TipoToken::SIGNO_EXCL_INI) {
+            esperandoInicioOracion = true;
+        }
+        // la raya (—) actua como inicio de dialogo, marca inicio de oracion
+        if (multibyte.tipo == TipoToken::RAYA) {
+            esperandoInicioOracion = true;
+        }
+        // si el signo multibyte es de apertura, no consume las banderas de contexto, las deja activas para que la primera palabra real las reciba
+        if (!esSignoDeApertura(multibyte.tipo)) {
+            saltosConsecutivos = 0;
+        }
+        return multibyte;
     }
 
-// Signos que empiezan en 0xE2 (3 bytes)
-    if ((unsigned char)c == 0xE2 && pos + 2 < contenido.size()) {
-        unsigned char b2 = (unsigned char)contenido[pos + 1];
-        unsigned char b3 = (unsigned char)contenido[pos + 2];
-
-    // € = 0xE2 0x82 0xAC
-        if (b2 == 0x82 && b3 == 0xAC) { avanzar(); avanzar(); avanzar(); return {TipoToken::EURO, "€", linea, col}; }
-    // ≠ = 0xE2 0x89 0xA0
-        if (b2 == 0x89 && b3 == 0xA0) { avanzar(); avanzar(); avanzar(); return {TipoToken::DIFERENTE, "≠", linea, col}; }
-    // — = 0xE2 0x80 0x94
-        if (b2 == 0x80 && b3 == 0x94) { avanzar(); avanzar(); avanzar(); return {TipoToken::RAYA, "—", linea, col}; }
-}
-
-// Signos ASCII de un solo byte
+    // signo ASCII via map
     avanzar();
-    switch (c) {
-        case ',': return {TipoToken::COMA, ",", linea, col};
-        case '.': return {TipoToken::PUNTO, ".", linea, col};
-        case ';': return {TipoToken::PUNTO_Y_COMA, ";", linea, col};
-        case ':': return {TipoToken::DOS_PUNTOS, ":", linea, col};
-        case '?': return {TipoToken::SIGNO_INTERR_FIN,"?", linea, col};
-        case '!': return {TipoToken::SIGNO_EXCL_FIN, "!", linea, col};
-        case '_': return {TipoToken::GUION_BAJO, "_", linea, col};
-        case '(': return {TipoToken::PARENTESIS_INI, "(", linea, col};
-        case ')': return {TipoToken::PARENTESIS_FIN, ")", linea, col};
-        case '[':  return {TipoToken::CORCHETE_INI, "[", linea, col};
-        case ']':  return {TipoToken::CORCHETE_FIN, "]", linea, col};
-        case '+': return {TipoToken::MAS, "+", linea, col};
-        case '=': return {TipoToken::IGUAL, "=", linea, col};
-        case '>': return {TipoToken::MAYOR_QUE, ">", linea, col};
-        case '<': return {TipoToken::MENOR_QUE, "<", linea, col};
-        case '/': return {TipoToken::BARRA, "/", linea, col};
-        case '&': return {TipoToken::AMPERSAND, "&", linea, col};
-        case '\'': return {TipoToken::COMILLA_SIMPLE, "'", linea, col};
-        case '"': return {TipoToken::COMILLA_DOBLE, "\"", linea, col};
-        case '*': return {TipoToken::ASTERISCO, "*", linea, col};
-        case '\\': return {TipoToken::BARRA_INVERTIDA, "\\", linea, col};
-        case '@': return {TipoToken::ARROBA, "@", linea, col};
-        case '#': return {TipoToken::NUMERAL, "#", linea, col};
-        case '~': return {TipoToken::VIRGULILLA, "~", linea, col};
-        case '$':  return {TipoToken::DOLAR, "$", linea, col};
-        case '%':  return {TipoToken::PORCENTAJE, "%", linea, col};
-        default: return {TipoToken::DESCONOCIDO, string(1, c), linea, col};
+    auto it = MAP_ASCII.find(c);
+    if (it != MAP_ASCII.end()) {
+        string rep(1, c);
+
+        // punto y signo de exclamación/interrogación marcan fin de oración
+        TipoToken tipo = it->second; 
+        bool marcarInicioOracion = false;
+
+        if (tipo == TipoToken::PUNTO) {
+
+            char anterior = '\0';
+            char siguiente = actual();
+
+            if (pos >= 2) 
+                anterior = contenido[pos - 2];
+
+            bool anteriorAlnum = isalnum((unsigned char)anterior);
+            bool siguienteAlnum = isalnum((unsigned char)siguiente);
+
+    // Caso 1: prueba1.txt 3.14 U.S.A
+            if (anteriorAlnum && siguienteAlnum) {
+                marcarInicioOracion = false;
+            }
+
+            else if (siguiente == '.') {
+                marcarInicioOracion = false;
+            }
+
+    // Caso normal: fin de oración
+            else {
+                marcarInicioOracion = true;
+            }
+        }
+
+        else if (tipo == TipoToken::SIGNO_INTERR_FIN || tipo == TipoToken::SIGNO_EXCL_FIN || tipo == TipoToken::DOS_PUNTOS) 
+            marcarInicioOracion = true;
+
+        // el guion ASCII (-) al inicio de linea indica dialogo
+        else if (tipo == TipoToken::GUION) {
+            marcarInicioOracion = true;
+        }
+
+        if (marcarInicioOracion) 
+            esperandoInicioOracion = true;
+
+        // si el signo ASCII es de apertura, no consume las banderas de contexto, las deja activas para que la primera palabra real las reciba.
+        // para signos que no son de apertura, si se resetea el contador de saltos.
+        if (!esSignoDeApertura(tipo)) {
+            saltosConsecutivos = 0;
+        }
+
+        return {tipo, rep, rep, linea, col, false, false, false};
     }
+
+    // caracter desconocido: registra error y sigue
+    string rep(1, c);
+    registrarError("Caracter desconocido: '" + rep + "'", linea, col);
+    saltosConsecutivos = 0;
+    return {TipoToken::DESCONOCIDO, rep, rep, linea, col, false, false, false};
 }
 
-vector<Token> AnalizadorLexico::tokenizar() {
+BufferTokens AnalizadorLexico::tokenizar() {
     vector<Token> tokens;
     pos = 0;
     lineaActual = 1;
     columnaActual = 1;
+    esperandoInicioOracion = true;
+    esperandoInicioLinea = true;
+    esperandoInicioParrafo = true;
+    saltosConsecutivos = 0;
 
+    // se detectan los puntos suspensivos como un token propio para evitar que el punto individual los procese mal.
     while (true) {
+        // deteccion de puntos suspensivos con lookahead de 2 posiciones: si el caracter actual y los dos siguientes son '.', se consume como una unidad y marca inicio de oracion 
+        if (actual() == '.' &&
+            pos + 1 < contenido.size() && contenido[pos + 1] == '.' && pos + 2 < contenido.size() && contenido[pos + 2] == '.') {
+
+            int linea = lineaActual;
+            int col = columnaActual;
+            avanzar(); avanzar(); avanzar(); // consumir los tres puntos
+            esperandoInicioOracion = true;
+            saltosConsecutivos = 0;
+            tokens.push_back({TipoToken::PUNTOS_SUSPENSIVOS, "...", "...", linea, col, false, false, false});
+            continue;
+        }
+
         Token t = siguienteToken();
         tokens.push_back(t);
-        if (t.tipo == TipoToken::FIN_ARCHIVO) break;
+        if (t.tipo == TipoToken::FIN_ARCHIVO) 
+            break;
     }
 
-    return tokens;
+    return BufferTokens(tokens);
+}
+
+//BufferTokens
+BufferTokens::BufferTokens(vector<Token> tokens) : tokens(move(tokens)), pos(0) {}
+
+Token BufferTokens::siguiente() {
+    if (pos < tokens.size()) return tokens[pos++];
+    return tokens.back(); // devuelve FIN_ARCHIVO 
+}
+
+// adelanto = 0 es el token actual, 1 es el siguiente, etc
+Token BufferTokens::ver(int adelanto) {
+    size_t objetivo = pos + adelanto;
+    if (objetivo < tokens.size()) return tokens[objetivo];
+    return tokens.back();
+}
+
+void BufferTokens::retroceder() {
+    if (pos > 0) 
+        pos--;
+}
+
+bool BufferTokens::hayMas() const {
+    return pos < tokens.size() && tokens[pos].tipo != TipoToken::FIN_ARCHIVO;
 }

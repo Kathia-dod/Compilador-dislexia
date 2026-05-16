@@ -1,3 +1,13 @@
+EJEMPLO DE ARCHIVO prueba1.txt:
 El niño bebe agua.
-La pelota es roja.
+La pelota es roja. Estoy sin energìa k@gmail.com
 ¿Dónde está el libro?
+- Que hará José hoy.
+"hOY".
+{1 + 1}
+— vACA.
+( 5 * 4 ) + 20.
+ARCHIVO1.txt (ejemplo)
+estoy sin ejemploss...
+(2 + 3)... no funciona.
+7.2 así
