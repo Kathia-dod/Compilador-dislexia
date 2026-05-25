@@ -10,41 +10,41 @@ enum class TipoToken {
     NUMERO,
     COMA,
     PUNTO,
-    PUNTOS_SUSPENSIVOS, //...
+    PUNTOS_SUSPENSIVOS,
     PUNTO_Y_COMA,
     DOS_PUNTOS,
-    SIGNO_INTERR_INI, // ¿
-    SIGNO_INTERR_FIN, // ?
-    SIGNO_EXCL_INI, // ¡
-    SIGNO_EXCL_FIN, // !
-    GUION_BAJO,     // _
-    PARENTESIS_INI, // (
-    PARENTESIS_FIN, // )
-    CORCHETE_INI,   // [
-    CORCHETE_FIN,   // ]
-    LLAVE_INI,   // {
-    LLAVE_FIN,   // }
-    MAS,        // +
-    GUION,      // -
-    IGUAL,      // =
-    MAYOR_QUE,      // >
-    MENOR_QUE,      // <
-    BARRA,      // /
-    AMPERSAND,  // &
-    COMILLA_SIMPLE, // '
-    COMILLA_DOBLE,  // "
-    ASTERISCO,      // *
-    BARRA_INVERTIDA,  
-    ARROBA,   // @
-    NUMERAL,  // #
-    VIRGULILLA,  // ~
-    DOLAR, // $
-    EURO,  // € 
-    PORCENTAJE, // %
-    DIFERENTE,  // ≠ 
-    COMILLA_ANGULAR_INI, // « (UTF-8: 0xC2 0xAB)
-    COMILLA_ANGULAR_FIN, // » (UTF-8: 0xC2 0xBB)
-    RAYA,               // — (UTF-8: 0xE2 0x80 0x94)
+    SIGNO_INTERR_INI,
+    SIGNO_INTERR_FIN,
+    SIGNO_EXCL_INI,
+    SIGNO_EXCL_FIN,
+    GUION_BAJO,
+    PARENTESIS_INI,
+    PARENTESIS_FIN,
+    CORCHETE_INI,
+    CORCHETE_FIN,
+    LLAVE_INI,
+    LLAVE_FIN,
+    MAS,
+    GUION,
+    IGUAL,
+    MAYOR_QUE,
+    MENOR_QUE,
+    BARRA,
+    AMPERSAND,
+    COMILLA_SIMPLE,
+    COMILLA_DOBLE,
+    ASTERISCO,
+    BARRA_INVERTIDA,
+    ARROBA,
+    NUMERAL,
+    VIRGULILLA,
+    DOLAR,
+    EURO,
+    PORCENTAJE,
+    DIFERENTE,
+    COMILLA_ANGULAR_INI,
+    COMILLA_ANGULAR_FIN,
+    RAYA,
     SALTO_LINEA,
     ESPACIO,
     DESCONOCIDO,
@@ -76,7 +76,7 @@ class BufferTokens {
     explicit BufferTokens(vector<Token> tokens);
 
     Token siguiente();
-    Token ver(int adelanto = 0);
+    Token ver(int adelanto = 0) const;
     void retroceder();
     bool hayMas() const;
 
@@ -123,7 +123,6 @@ class AnalizadorLexico {
     string normalizar(const string& texto);
     void registrarError(const string& desc, int linea, int col);
 
-    // devuelve true si el tipo de token es un signo de apertura
     bool esSignoDeApertura(TipoToken tipo) const;
 };
 

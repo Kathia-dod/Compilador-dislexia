@@ -7,7 +7,6 @@
 #include <unordered_map>
 using namespace std;
 
-// map de signos ASCII
 static const unordered_map<char, TipoToken> MAP_ASCII = {
     {',', TipoToken::COMA},
     {'.', TipoToken::PUNTO},
@@ -37,11 +36,9 @@ static const unordered_map<char, TipoToken> MAP_ASCII = {
     {'#', TipoToken::NUMERAL},
     {'~', TipoToken::VIRGULILLA},
     {'$', TipoToken::DOLAR},
-    {'%', TipoToken::PORCENTAJE}, 
-    
+    {'%', TipoToken::PORCENTAJE},
 };
 
-// map de signos multibyte UTF-8, secuencia de bytes como string, valor: TipoToken, simbolo
 struct InfoMultibyte {
     TipoToken tipo;
     string representacion;
@@ -103,20 +100,17 @@ string nombreTipo(TipoToken tipo) {
         {TipoToken::DESCONOCIDO, "TOKEN_DESCONOCIDO"},
         {TipoToken::FIN_ARCHIVO, "TOKEN_FIN_ARCHIVO"},
     };
-
     auto it = nombres.find(tipo);
     if (it != nombres.end()) return it->second;
     return "TOKEN_???";
 }
 
-AnalizadorLexico::AnalizadorLexico(const string& rutaArchivo) : pos(0), lineaActual(1), columnaActual(1),
-      esperandoInicioOracion(true),
-      esperandoInicioLinea(true),
-      esperandoInicioParrafo(true),
-      saltosConsecutivos(0) {
-    if (!cargarArchivo(rutaArchivo)) {
+AnalizadorLexico::AnalizadorLexico(const string& rutaArchivo)
+    : pos(0), lineaActual(1), columnaActual(1),
+      esperandoInicioOracion(true), esperandoInicioLinea(true),
+      esperandoInicioParrafo(true), saltosConsecutivos(0) {
+    if (!cargarArchivo(rutaArchivo))
         throw runtime_error("No se pudo abrir el archivo: " + rutaArchivo);
-    }
 }
 
 bool AnalizadorLexico::cargarArchivo(const string& ruta) {
@@ -138,12 +132,9 @@ void AnalizadorLexico::avanzar() {
         if (contenido[pos] == '\n') {
             lineaActual++;
             columnaActual = 1;
-            // al encontrar un salto de linea se activa la bandera de inicio de linea y se cuenta cuantos saltos consecutivos hay para detectar parrafos
             esperandoInicioLinea = true;
             saltosConsecutivos++;
-            if (saltosConsecutivos >= 2) {
-                esperandoInicioParrafo = true;
-            }
+            if (saltosConsecutivos >= 2) esperandoInicioParrafo = true;
         } else {
             columnaActual++;
         }
@@ -155,34 +146,22 @@ void AnalizadorLexico::registrarError(const string& desc, int linea, int col) {
     errores.push_back({desc, linea, col});
 }
 
-const vector<ErrorLexico>& AnalizadorLexico::obtenerErrores() const {
-    return errores;
-}
-
-bool AnalizadorLexico::tieneErrores() const {
-    return !errores.empty();
-}
+const vector<ErrorLexico>& AnalizadorLexico::obtenerErrores() const { return errores; }
+bool AnalizadorLexico::tieneErrores() const { return !errores.empty(); }
 
 bool AnalizadorLexico::esPalabraChar(unsigned char c) {
     if (c >= 'a' && c <= 'z') return true;
     if (c >= 'A' && c <= 'Z') return true;
     if (c < 128) return false;
-
     for (const auto& entrada : MAP_MULTIBYTE) {
         const string& sec = entrada.first;
-        if (!sec.empty() && (unsigned char)sec[0] == c) {
-            return false;
-        }
+        if (!sec.empty() && (unsigned char)sec[0] == c) return false;
     }
-
-    return true; 
+    return true;
 }
 
-bool AnalizadorLexico::esDigito(unsigned char c) {
-    return c >= '0' && c <= '9';
-}
+bool AnalizadorLexico::esDigito(unsigned char c) { return c >= '0' && c <= '9'; }
 
-// normaliza a minusculas respetando multibyte
 string AnalizadorLexico::normalizar(const string& texto) {
     string resultado = "";
     size_t i = 0;
@@ -192,20 +171,17 @@ string AnalizadorLexico::normalizar(const string& texto) {
             resultado += (char)tolower(texto[i]);
             i++;
         } else {
-            // caracteres multibyte se copian sin tocar
             int bytes = 1;
             if ((uc & 0xE0) == 0xC0) bytes = 2;
             else if ((uc & 0xF0) == 0xE0) bytes = 3;
             else if ((uc & 0xF8) == 0xF0) bytes = 4;
-            for (int j = 0; j < bytes && i < texto.size(); j++, i++) {
+            for (int j = 0; j < bytes && i < texto.size(); j++, i++)
                 resultado += texto[i];
-            }
         }
     }
     return resultado;
 }
 
-// devuelve true si el token es un signo de apertura
 bool AnalizadorLexico::esSignoDeApertura(TipoToken tipo) const {
     switch (tipo) {
         case TipoToken::PARENTESIS_INI:
@@ -222,10 +198,8 @@ bool AnalizadorLexico::esSignoDeApertura(TipoToken tipo) const {
     }
 }
 
-// lee la palabra guardando: original y normalizada
 Token AnalizadorLexico::leerPalabra(int linea, int col) {
     string original = "";
-
     while (pos < contenido.size() && esPalabraChar((unsigned char)actual())) {
         unsigned char uc = (unsigned char)actual();
         if (uc < 128) {
@@ -242,16 +216,13 @@ Token AnalizadorLexico::leerPalabra(int linea, int col) {
             }
         }
     }
-
     bool esInicioOracion = esperandoInicioOracion;
-    bool esInicioLinea = esperandoInicioLinea;
+    bool esInicioLinea   = esperandoInicioLinea;
     bool esInicioParrafo = esperandoInicioParrafo;
-
     esperandoInicioOracion = false;
-    esperandoInicioLinea = false;
+    esperandoInicioLinea   = false;
     esperandoInicioParrafo = false;
     saltosConsecutivos = 0;
-
     return {TipoToken::PALABRA, original, normalizar(original), linea, col, esInicioOracion, esInicioLinea, esInicioParrafo};
 }
 
@@ -261,29 +232,23 @@ Token AnalizadorLexico::leerNumero(int linea, int col) {
         num += actual();
         avanzar();
     }
-    // los numeros marcan INICIO_LINEA
     bool esInicioOracion = esperandoInicioOracion;
-    bool esInicioLinea = esperandoInicioLinea;
+    bool esInicioLinea   = esperandoInicioLinea;
     bool esInicioParrafo = esperandoInicioParrafo;
-
     esperandoInicioOracion = false;
-    esperandoInicioLinea = false;
+    esperandoInicioLinea   = false;
     esperandoInicioParrafo = false;
     saltosConsecutivos = 0;
-
     return {TipoToken::NUMERO, num, num, linea, col, esInicioOracion, esInicioLinea, esInicioParrafo};
 }
 
-// lógica multibyte 
 bool AnalizadorLexico::leerSignoMultibyte(int linea, int col, Token& resultado) {
     for (const auto& entrada : MAP_MULTIBYTE) {
         const string& secuencia = entrada.first;
         const InfoMultibyte& info = entrada.second;
         size_t len = secuencia.size();
-
         if (pos + len <= contenido.size() && contenido.substr(pos, len) == secuencia) {
-            for (size_t i = 0; i < len; i++) 
-                avanzar();
+            for (size_t i = 0; i < len; i++) avanzar();
             resultado = {info.tipo, info.representacion, info.representacion, linea, col, false, false, false};
             return true;
         }
@@ -294,114 +259,60 @@ bool AnalizadorLexico::leerSignoMultibyte(int linea, int col, Token& resultado) 
 Token AnalizadorLexico::siguienteToken() {
     char c = actual();
     int linea = lineaActual;
-    int col = columnaActual;
+    int col   = columnaActual;
 
     if (c == '\0') return {TipoToken::FIN_ARCHIVO, "", "", linea, col, false, false, false};
+    if (c == ' ' || c == '\t') { avanzar(); return {TipoToken::ESPACIO, " ", " ", linea, col, false, false, false}; }
+    if (c == '\n')              { avanzar(); return {TipoToken::SALTO_LINEA, "\\n", "\\n", linea, col, false, false, false}; }
 
-    if (c == ' ' || c == '\t') {
-        avanzar();
-        return {TipoToken::ESPACIO, " ", " ", linea, col, false, false, false};
-    }
+    if (esPalabraChar((unsigned char)c)) return leerPalabra(linea, col);
+    if (esDigito((unsigned char)c))      return leerNumero(linea, col);
 
-    if (c == '\n') {
-        avanzar();
-        return {TipoToken::SALTO_LINEA, "\\n", "\\n", linea, col, false, false, false};
-    }
-
-    if (esPalabraChar((unsigned char)c)) {
-        return leerPalabra(linea, col);
-    }
-
-    if (esDigito((unsigned char)c)) {
-        return leerNumero(linea, col);
-    }
-
-    // intentar multibyte antes de ASCII
     Token multibyte;
     if (leerSignoMultibyte(linea, col, multibyte)) {
-        if (multibyte.tipo == TipoToken::SIGNO_INTERR_INI || multibyte.tipo == TipoToken::SIGNO_EXCL_INI) {
+        if (multibyte.tipo == TipoToken::SIGNO_INTERR_INI || multibyte.tipo == TipoToken::SIGNO_EXCL_INI)
             esperandoInicioOracion = true;
-        }
-        // la raya (—) marca inicio de oracion como dialogo, excepto si esta entre dos digitos
         if (multibyte.tipo == TipoToken::RAYA) {
             char anteriorR = (pos >= 4) ? contenido[pos - 4] : '\0';
             char siguienteR = actual();
-            if (!(esDigito((unsigned char)anteriorR) && esDigito((unsigned char)siguienteR))) {
+            if (!(esDigito((unsigned char)anteriorR) && esDigito((unsigned char)siguienteR)))
                 esperandoInicioOracion = true;
-            }
         }
-        // si el signo multibyte es de apertura, no consume las banderas de contexto, las deja activas para que la primera palabra real las reciba
-        if (!esSignoDeApertura(multibyte.tipo)) {
-            saltosConsecutivos = 0;
-        }
+        if (!esSignoDeApertura(multibyte.tipo)) saltosConsecutivos = 0;
         return multibyte;
     }
 
-    // signo ASCII via map
     avanzar();
     auto it = MAP_ASCII.find(c);
     if (it != MAP_ASCII.end()) {
         string rep(1, c);
-
-        // punto y signo de exclamación/interrogación marcan fin de oración
-        TipoToken tipo = it->second; 
+        TipoToken tipo = it->second;
         bool marcarInicioOracion = false;
 
         if (tipo == TipoToken::PUNTO) {
-
-            char anterior = '\0';
+            char anterior = (pos >= 2) ? contenido[pos - 2] : '\0';
             char siguiente = actual();
-
-            if (pos >= 2) 
-                anterior = contenido[pos - 2];
-
             bool anteriorAlnum = isalnum((unsigned char)anterior);
             bool siguienteAlnum = isalnum((unsigned char)siguiente);
-
-    // Caso 1: prueba1.txt 3.14 U.S.A
-            if (anteriorAlnum && siguienteAlnum) {
-                marcarInicioOracion = false;
-            }
-
-            else if (siguiente == '.') {
-                marcarInicioOracion = false;
-            }
-
-    // Caso normal: fin de oración
-            else {
-                marcarInicioOracion = true;
-            }
+            if (anteriorAlnum && siguienteAlnum) marcarInicioOracion = false;
+            else if (siguiente == '.') marcarInicioOracion = false;
+            else marcarInicioOracion = true;
         }
-
-        else if (tipo == TipoToken::SIGNO_INTERR_FIN || tipo == TipoToken::SIGNO_EXCL_FIN || tipo == TipoToken::DOS_PUNTOS) 
+        else if (tipo == TipoToken::SIGNO_INTERR_FIN || tipo == TipoToken::SIGNO_EXCL_FIN || tipo == TipoToken::DOS_PUNTOS)
             marcarInicioOracion = true;
-
-        // el guion (-) marca inicio de oracion como dialogo o cita, excepto si esta entre dos digitos (ej: 999-123-456 telefono) o si no le sigue un espacio
-        // (ej: -esta roto- es cita en medio de oracion, no dialogo)
-
         else if (tipo == TipoToken::GUION) {
             char anteriorG = (pos >= 2) ? contenido[pos - 2] : '\0';
             char siguienteG = actual();
             bool entreDigitos = esDigito((unsigned char)anteriorG) && esDigito((unsigned char)siguienteG);
             bool sigueEspacio = (siguienteG == ' ' || siguienteG == '\t');
-            if (!entreDigitos && sigueEspacio) {
-                marcarInicioOracion = true;
-            }
+            if (!entreDigitos && sigueEspacio) marcarInicioOracion = true;
         }
 
-        if (marcarInicioOracion) 
-            esperandoInicioOracion = true;
-
-        // si el signo ASCII es de apertura, no consume las banderas de contexto, las deja activas para que la primera palabra real las reciba.
-        // para signos que no son de apertura, si se resetea el contador de saltos.
-        if (!esSignoDeApertura(tipo)) {
-            saltosConsecutivos = 0;
-        }
-
+        if (marcarInicioOracion) esperandoInicioOracion = true;
+        if (!esSignoDeApertura(tipo)) saltosConsecutivos = 0;
         return {tipo, rep, rep, linea, col, false, false, false};
     }
 
-    // caracter desconocido: registra error y sigue
     string rep(1, c);
     registrarError("Caracter desconocido: '" + rep + "'", linea, col);
     saltosConsecutivos = 0;
@@ -410,58 +321,42 @@ Token AnalizadorLexico::siguienteToken() {
 
 BufferTokens AnalizadorLexico::tokenizar() {
     vector<Token> tokens;
-    pos = 0;
-    lineaActual = 1;
-    columnaActual = 1;
-    esperandoInicioOracion = true;
-    esperandoInicioLinea = true;
-    esperandoInicioParrafo = true;
-    saltosConsecutivos = 0;
+    pos = 0; lineaActual = 1; columnaActual = 1;
+    esperandoInicioOracion = true; esperandoInicioLinea = true;
+    esperandoInicioParrafo = true; saltosConsecutivos = 0;
 
-    // se detectan los puntos suspensivos como un token propio para evitar que el punto individual los procese mal.
     while (true) {
-        // deteccion de puntos suspensivos con lookahead de 2 posiciones: si el caracter actual y los dos siguientes son '.', se consume como una unidad y marca inicio de oracion 
         if (actual() == '.' &&
             pos + 1 < contenido.size() && contenido[pos + 1] == '.' &&
             pos + 2 < contenido.size() && contenido[pos + 2] == '.') {
-
-            int linea = lineaActual;
-            int col = columnaActual;
-            avanzar(); avanzar(); avanzar(); // consumir los tres puntos
+            int linea = lineaActual, col = columnaActual;
+            avanzar(); avanzar(); avanzar();
             esperandoInicioOracion = true;
             saltosConsecutivos = 0;
             tokens.push_back({TipoToken::PUNTOS_SUSPENSIVOS, "...", "...", linea, col, false, false, false});
             continue;
         }
-
         Token t = siguienteToken();
         tokens.push_back(t);
-        if (t.tipo == TipoToken::FIN_ARCHIVO) 
-            break;
+        if (t.tipo == TipoToken::FIN_ARCHIVO) break;
     }
-
     return BufferTokens(tokens);
 }
 
-//BufferTokens
 BufferTokens::BufferTokens(vector<Token> tokens) : tokens(move(tokens)), pos(0) {}
 
 Token BufferTokens::siguiente() {
     if (pos < tokens.size()) return tokens[pos++];
-    return tokens.back(); // devuelve FIN_ARCHIVO 
+    return tokens.back();
 }
 
-// adelanto = 0 es el token actual, 1 es el siguiente, etc
-Token BufferTokens::ver(int adelanto) {
+Token BufferTokens::ver(int adelanto) const {
     size_t objetivo = pos + adelanto;
     if (objetivo < tokens.size()) return tokens[objetivo];
     return tokens.back();
 }
 
-void BufferTokens::retroceder() {
-    if (pos > 0) 
-        pos--;
-}
+void BufferTokens::retroceder() { if (pos > 0) pos--; }
 
 bool BufferTokens::hayMas() const {
     return pos < tokens.size() && tokens[pos].tipo != TipoToken::FIN_ARCHIVO;

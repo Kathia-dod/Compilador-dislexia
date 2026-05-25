@@ -1,54 +1,202 @@
+// main.cpp
+
 #include <iostream>
-#include <vector>
+#include <iomanip>
+
 #include "analizador_lexico.h"
+#include "analizador_sintactico.h"
+
 using namespace std;
 
+// ─────────────────────────────────────────────
+// Colores ANSI
+// ─────────────────────────────────────────────
+#define RESET   "\033[0m"
+#define BOLD    "\033[1m"
+#define RED     "\033[31m"
+#define GREEN   "\033[32m"
+#define YELLOW  "\033[33m"
+#define CYAN    "\033[36m"
+
+void imprimirSeparador(const string& titulo) {
+    cout << "\n";
+    cout << CYAN << BOLD;
+    cout << "========================================\n";
+    cout << " " << titulo << "\n";
+    cout << "========================================\n";
+    cout << RESET;
+}
+
+void mostrarTokens(BufferTokens buffer) {
+    cout << GREEN << "TOKENS GENERADOS:\n\n" << RESET;
+
+    while (buffer.hayMas()) {
+
+        Token t = buffer.siguiente();
+
+        // ignorar espacios visualmente
+        if (t.tipo == TipoToken::ESPACIO ||
+            t.tipo == TipoToken::SALTO_LINEA)
+            continue;
+
+        cout << left << setw(28)
+             << ("[" + nombreTipo(t.tipo) + "]");
+
+        cout << " original=\""
+             << t.valorOriginal << "\"";
+
+        cout << " normal=\""
+             << t.valorNormal << "\"";
+
+        cout << " (L"
+             << t.linea
+             << ":C"
+             << t.columna
+             << ")";
+
+        if (t.inicioOracion)
+            cout << "  [INICIO_ORACION]";
+
+        if (t.inicioLinea)
+            cout << "  [INICIO_LINEA]";
+
+        if (t.inicioParrafo)
+            cout << "  [INICIO_PARRAFO]";
+
+        cout << "\n";
+    }
+}
+
+void mostrarErroresLexicos(const AnalizadorLexico& lexer) {
+
+    if (!lexer.tieneErrores())
+        return;
+
+    cout << RED << BOLD;
+    cout << "\nERRORES LEXICOS:\n";
+    cout << RESET;
+
+    for (const auto& e : lexer.obtenerErrores()) {
+
+        cout << RED
+             << "  [Linea "
+             << e.linea
+             << ", Col "
+             << e.columna
+             << "] "
+             << e.descripcion
+             << RESET
+             << "\n";
+    }
+}
+
+void mostrarErroresSintacticos(const AnalizadorSintactico& parser) {
+
+    if (!parser.tieneErrores())
+        return;
+
+    cout << RED << BOLD;
+    cout << "\nERRORES SINTACTICOS:\n";
+    cout << RESET;
+
+    for (const auto& e : parser.obtenerErrores()) {
+
+        cout << RED
+             << "  [Linea "
+             << e.linea
+             << ", Col "
+             << e.columna
+             << "] "
+             << e.descripcion
+             << RESET
+             << "\n";
+    }
+}
+
 int main(int argc, char* argv[]) {
-    string rutaEntrada = "input/prueba1.txt";
-    if (argc >= 2) 
+
+    string rutaEntrada = "input/prueba2.txt";
+
+    if (argc >= 2)
         rutaEntrada = argv[1];
 
-    cout << "Leyendo archivo: " << rutaEntrada << "\n\n";
+    cout << BOLD
+         << "\nCOMPILADOR PARA DETECCION DE DIFICULTADES DE LECTURA\n"
+         << RESET;
+
+    cout << "Archivo de entrada: "
+         << rutaEntrada
+         << "\n";
 
     try {
+
+        // ─────────────────────────────────────
+        // ANALISIS LEXICO
+        // ─────────────────────────────────────
+        imprimirSeparador("ANALISIS LEXICO");
+
         AnalizadorLexico lexer(rutaEntrada);
-        BufferTokens buffer = lexer.tokenizar();
 
-        // mostrar errores
-        if (lexer.tieneErrores()) {
-            cout << "ERRORES LEXICOS:\n";
-            for (const ErrorLexico& e : lexer.obtenerErrores()) {
-                cout << "  [linea " << e.linea << ", col " << e.columna << "] " << e.descripcion << "\n";
-            }
-            cout << "\n";
+        BufferTokens bufferTokens = lexer.tokenizar();
+
+        mostrarTokens(bufferTokens);
+
+        mostrarErroresLexicos(lexer);
+
+        // IMPORTANTE:
+        // El buffer ya fue consumido al imprimir tokens,
+        // por eso necesitamos volver a tokenizar.
+        BufferTokens bufferParser = lexer.tokenizar();
+
+        // ─────────────────────────────────────
+        // ANALISIS SINTACTICO
+        // ─────────────────────────────────────
+        imprimirSeparador("ANALISIS SINTACTICO");
+
+        AnalizadorSintactico parser(move(bufferParser));
+
+        NodoSintactico ast = parser.analizar();
+
+        parser.imprimirArbol(ast);
+
+        mostrarErroresSintacticos(parser);
+
+        // ─────────────────────────────────────
+        // RESUMEN FINAL
+        // ─────────────────────────────────────
+        imprimirSeparador("RESUMEN");
+
+        cout << "Errores lexicos: "
+             << lexer.obtenerErrores().size()
+             << "\n";
+
+        cout << "Errores sintacticos: "
+             << parser.obtenerErrores().size()
+             << "\n";
+
+        if (!lexer.tieneErrores() &&
+            !parser.tieneErrores()) {
+
+            cout << GREEN
+                 << "\nAnalisis completado correctamente.\n"
+                 << RESET;
+        }
+        else {
+
+            cout << YELLOW
+                 << "\nAnalisis finalizado con errores.\n"
+                 << RESET;
         }
 
-        cout << "TOKENS GENERADOS:\n";
+    }
+    catch (const exception& e) {
 
-        // consumir via buffer en lugar de iterar el vector directo
-        while (buffer.hayMas()) {
-            Token t = buffer.siguiente();
+        cerr << RED
+             << "\nERROR FATAL: "
+             << e.what()
+             << RESET
+             << "\n";
 
-            if (t.tipo == TipoToken::ESPACIO || t.tipo == TipoToken::SALTO_LINEA)
-                continue;
-
-            cout << "[" << nombreTipo(t.tipo) << "] " << "original=\"" << t.valorOriginal << "\" " << "normal=\""   << t.valorNormal   << "\" " << "(linea " << t.linea << ", col " << t.columna << ")";
-
-            // marcar inicio de oraciones
-            if (t.inicioOracion) 
-                cout << " [INICIO_ORACION]";
-            
-            if (t.inicioLinea) 
-                cout << " [INICIO_LINEA]";
-            
-            if (t.inicioParrafo) 
-                cout << " [INICIO_PARRAFO]";
-            
-            cout << "\n";
-        }
-
-    } catch (const exception& e) {
-        cerr << "Error fatal: " << e.what() << "\n";
         return 1;
     }
 
