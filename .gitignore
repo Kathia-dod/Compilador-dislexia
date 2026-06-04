@@ -1,1 +1,39 @@
+# Ejecutables
+compilador
+*.out
+*.exe
+
+# Archivos objeto y dependencias
+*.o
+*.obj
+*.d
+
+# Bibliotecas
+*.so
+*.a
+
+# CMake
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+compile_commands.json
+CTestTestfile.cmake
+Testing/
+
+# Directorios de build
 build/
+cmake-build-debug/
+cmake-build-release/
+
+# VS Code
+.vscode/
+
+# Temporales
+*.log
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
