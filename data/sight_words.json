@@ -1,0 +1,18 @@
+{
+  "descripcion": "Palabras de alta frecuencia en español(sight word). Palabras que el lector automatiza visualmente. Un dislexico tiende a reconstruirlas fonologicamente cada vez, lo que genera errores intermitentes incluso en palabras muy basicas.",
+  "fuentes": [
+    "Frecuencias del Corpus de Referencia del Español Actual (CREA) - Real Academia Española",
+    "Rello, L. et al. (2013). Good fonts for dyslexia. ASSETS 2013."
+  ],
+  "nota_implementacion": "Verificar si el TOKEN_PALABRA.valorNormal aparece en esta lista. Si hay un error ortografico en una sight word, multiplicar el peso del error por el factor sight_word_multiplier.",
+  "sight_word_multiplier": 3.0,
+  "palabras": [
+    "la", "el", "que", "de", "en", "un", "es", "se", "no", "te",
+    "le", "lo", "me", "mi", "su", "ya", "yo", "al", "del", "con",
+    "por", "para", "una", "los", "las", "mas", "pero", "como", "todo", "este",
+    "esta", "son", "hay", "fue", "ser", "tiene", "bien", "muy", "más", "sin",
+    "sobre", "también", "hasta", "desde", "entre", "cuando", "donde", "quien",
+    "cuál", "cómo", "qué", "porque", "aunque", "si", "así", "ahora",
+    "aquí", "allí", "después", "antes", "siempre", "nunca", "solo"
+  ]
+}

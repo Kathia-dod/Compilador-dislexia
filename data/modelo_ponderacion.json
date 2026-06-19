@@ -1,0 +1,196 @@
+{
+  "descripcion": "Define el peso de cada tipo de error y la formula para obtener el porcentaje final. Sin este modelo el indicador seria arbitrario.",
+  "fuentes": [
+    "Shaywitz, S. E. (1998). Dyslexia. New England Journal of Medicine, 338(5), 307-312.",
+    "Rello, L. & Baeza-Yates, R. (2013). Good fonts for dyslexia. Proceedings of ASSETS 2013.",
+    "Seymour, P. H. K. et al. (2003). Foundation literacy acquisition in European orthographies. British Journal of Psychology, 94(2), 143-174."
+  ],
+  "formula": {
+    "descripcion": "Indicador (%) = (suma_pesos_errores / palabras_analizables) * 100, acotado a [0, 100]",
+    "palabras_analizables": "Total de TOKEN_PALABRA + TOKEN_PALABRA_COMPUESTA en el texto, excluyendo los casos de falsos_positivos.json"
+  },
+  "pesos_por_categoria": [
+    {
+      "categoria": "confusion_visual_b_d_p_q",
+      "descripcion": "Palabras con b, d, p o q. La confusion visual mas documentada.",
+      "peso_base": 2.5
+    },
+    {
+      "categoria": "homofono_b_v",
+      "descripcion": "Palabras del grupo b/v. Maxima confusion fonologica.",
+      "peso_base": 2.0
+    },
+    {
+      "categoria": "homofono_ll_y",
+      "descripcion": "Palabras del grupo ll/y. Yeismo.",
+      "peso_base": 2.0
+    },
+    {
+      "categoria": "homofono_s_c_z",
+      "descripcion": "Palabras del grupo s/c/z. Seseo.",
+      "peso_base": 2.0
+    },
+    {
+      "categoria": "h_muda",
+      "descripcion": "Palabras que comienzan o contienen H intercalada muda.",
+      "peso_base": 1.5
+    },
+    {
+      "categoria": "digrafo",
+      "descripcion": "Palabras con ch, ll, rr, qu, gu.",
+      "peso_base": 1.8
+    },
+    {
+      "categoria": "sinfon_r",
+      "descripcion": "Palabras con grupos br, cr, dr, fr, gr, pr, tr.",
+      "peso_base": 1.5
+    },
+    {
+      "categoria": "sinfon_l",
+      "descripcion": "Palabras con grupos bl, cl, fl, gl, pl.",
+      "peso_base": 1.2
+    },
+    {
+      "categoria": "diptongo",
+      "descripcion": "Palabras con diptongos.",
+      "peso_base": 1.0
+    },
+    {
+      "categoria": "triptongo",
+      "descripcion": "Palabras con triptongos.",
+      "peso_base": 1.5
+    },
+    {
+      "categoria": "contexto_dependiente",
+      "descripcion": "Palabras con c/g cuyo sonido depende del contexto.",
+      "peso_base": 1.5
+    },
+    {
+      "categoria": "silaba_inversa",
+      "descripcion": "Palabras con silabas inversas o grupos consonanticos complejos.",
+      "peso_base": 1.2
+    },
+    {
+      "categoria": "inversion_silabica",
+      "descripcion": "Palabras que son inversiones de otras palabras reales (pardo/prado).",
+      "peso_base": 2.0
+    },
+    {
+      "categoria": "terminacion_problematica",
+      "descripcion": "Palabras con terminaciones cion, sion, mente, idad, etc.",
+      "peso_base": 1.0
+    },
+    {
+      "categoria": "tilde_diacritica",
+      "descripcion": "Palabras distinguidas solo por tilde diacritica. Peso menor porque son errores ortograficos, no fonologicos puros.",
+      "peso_base": 0.8
+    },
+    {
+      "categoria": "acento_invalido_detectado_por_lexico",
+      "descripcion": "Error ya registrado por el analizador lexico (energia con acento grave).",
+      "peso_base": 1.0
+    },
+    {
+      "categoria": "confusion_visual_otros",
+      "descripcion": "Pares de confusion visual de severidad alta distintos a b/d/p/q (ej. u/n).",
+      "peso_base": 1.5
+    },
+    {
+      "categoria": "homofono_g_j",
+      "descripcion": "Palabras del grupo g/j. Misma pronunciacion ante e/i.",
+      "peso_base": 1.8
+    },
+    {
+      "categoria": "homofono_otros",
+      "descripcion": "Pares homofonos que no encajan en las categorias b_v, ll_y, s_c_z o g_j.",
+      "peso_base": 1.5
+    },
+    {
+      "categoria": "longitud",
+      "descripcion": "Palabras de 4 o mas silabas (R07). Mayor carga cognitiva por extension.",
+      "peso_base": 1.0
+    }
+  ],
+  "modificadores": [
+    {
+      "nombre": "sight_word_multiplier",
+      "descripcion": "Si la palabra tambien aparece en sight_words.json, multiplicar su peso total por este factor. Un error en una palabra basica automatizada es mas significativo diagnosticamente.",
+      "valor": 3.0
+    },
+    {
+      "nombre": "multiples_riesgos_bonus",
+      "descripcion": "Si la palabra activa 2 o mas reglas simultaneamente (ej: sinfon_r + diptongo), sumar 0.5 adicional al peso total. Indica mayor complejidad estructural.",
+      "valor": 0.5
+    },
+    {
+      "nombre": "lista_curada_bonus",
+      "descripcion": "Si la palabra aparece directamente en palabras_riesgo.json (lista curada), sumar 0.3 adicional al peso. La lista curada tiene validacion clinica directa.",
+      "valor": 0.3
+    }
+  ],
+  "niveles_indicador": [
+    {
+      "rango": [
+        0,
+        15
+      ],
+      "nivel": "BAJO",
+      "descripcion": "Texto con pocas palabras de riesgo. No hay patron sugestivo de dislexia."
+    },
+    {
+      "rango": [
+        16,
+        35
+      ],
+      "nivel": "MODERADO",
+      "descripcion": "Presencia notable de palabras de riesgo. Puede indicar dificultades lectoras. Se recomienda revision."
+    },
+    {
+      "rango": [
+        36,
+        60
+      ],
+      "nivel": "ALTO",
+      "descripcion": "Alta densidad de palabras problematicas. Patron consistente con dificultades disleticas."
+    },
+    {
+      "rango": [
+        61,
+        100
+      ],
+      "nivel": "MUY_ALTO",
+      "descripcion": "El texto tiene una concentracion muy elevada de palabras de riesgo. Fuertemente sugestivo de dislexia."
+    }
+  ],
+  "nota_clinica": "Este es un indicador computacional de riesgo basado en la estructura lingüistica del texto, pero el diagnostico clinico requiere evaluacion por un especialista.",
+  "alias_categorias": {
+    "_descripcion": "Mapa de resolucion de nombres. Todas las categoria_reporte de reglas_deteccion.json y todos los valores del campo riesgos en palabras_riesgo.json deben pasar por este alias antes de buscar peso_base en pesos_por_categoria. Esto evita que un nombre distinto (ej. 'terminacion' vs 'terminacion_problematica') quede sin peso definido.",
+    "sinfon_r": "sinfon_r",
+    "sinfon_l": "sinfon_l",
+    "diptongo": "diptongo",
+    "triptongo": "triptongo",
+    "digrafo": "digrafo",
+    "longitud": "longitud",
+    "h_muda": "h_muda",
+    "contexto_dependiente": "contexto_dependiente",
+    "contexto_c": "contexto_dependiente",
+    "contexto_g": "contexto_dependiente",
+    "silaba_inversa": "silaba_inversa",
+    "inversion_silabica": "inversion_silabica",
+    "terminacion_problematica": "terminacion_problematica",
+    "terminacion": "terminacion_problematica",
+    "tilde_diacritica": "tilde_diacritica",
+    "acento_invalido_detectado_por_lexico": "acento_invalido_detectado_por_lexico",
+    "ll_y": "homofono_ll_y",
+    "homofono_b_v": "homofono_b_v",
+    "homofono_ll_y": "homofono_ll_y",
+    "homofono_s_c_z": "homofono_s_c_z",
+    "homofono_g_j": "homofono_g_j",
+    "homofono_h_muda": "h_muda",
+    "homofono_otros": "homofono_otros",
+    "confusion_visual_b_d_p_q": "confusion_visual_b_d_p_q",
+    "confusion_visual_otros": "confusion_visual_otros",
+    "lista_curada": null,
+    "sight_word": null
+  }
+}

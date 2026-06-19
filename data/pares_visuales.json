@@ -1,0 +1,129 @@
+{
+  "descripcion": "Pares de grafemas con confusion visual.",
+  "fuentes": [
+    "https://repositorio.unican.es/xmlui/bitstream/handle/10902/15215/SaizGonzalezNatalia.pdf",
+    "https://blog.changedyslexia.org/ejercicios-para-la-dislexia-change-dyslexia-dytective/",
+    "https://logopedasadomicilio.com/palabras-confunden-ninos-dislexia"
+  ],
+  "pares": [
+    {
+      "grafemas": ["b", "d"],
+      "tipo": "confusion_visual",
+      "subtipo": "simetria_horizontal",
+      "descripcion": "Espejo horizontal.",
+      "severidad": "alta"
+    },
+    {
+      "grafemas": ["p", "q"],
+      "tipo": "confusion_visual",
+      "subtipo": "simetria_horizontal",
+      "descripcion": "Espejo horizontal del trazo inferior.",
+      "severidad": "alta"
+    },
+    {
+      "grafemas": ["d", "p"],
+      "tipo": "confusion_visual",
+      "subtipo": "simetria_vertical",
+      "descripcion": "Espejo vertical. Trazo circular con palo arriba/abajo.",
+      "severidad": "alta"
+    },
+    {
+      "grafemas": ["b", "q"],
+      "tipo": "confusion_visual",
+      "subtipo": "rotacion_180",
+      "descripcion": "Rotacion de 180 grados.",
+      "severidad": "media"
+    },
+    {
+      "grafemas": ["u", "n"],
+      "tipo": "confusion_visual",
+      "subtipo": "rotacion_180",
+      "descripcion": "La u invertida da la n.",
+      "severidad": "alta"
+    },
+    {
+      "grafemas": ["b", "g"],
+      "tipo": "confusion_visual",
+      "subtipo": "forma_similar",
+      "descripcion": "Trazo circular con prolongacion.",
+      "severidad": "media"
+    },
+    {
+      "grafemas": ["d", "g"],
+      "tipo": "confusion_visual",
+      "subtipo": "forma_similar",
+      "descripcion": "Oval con trazo vertical en distintas direcciones.",
+      "severidad": "media"
+    },
+    {
+      "grafemas": ["a", "e"],
+      "tipo": "confusion_visual",
+      "subtipo": "forma_similar",
+      "descripcion": "Forma redondeada similar. Frecuente en etapas tempranas.",
+      "severidad": "media"
+    },
+    {
+      "grafemas": ["m", "n"],
+      "tipo": "confusion_visual",
+      "subtipo": "forma_similar",
+      "descripcion": "Misma estructura, diferente numero de arcos.",
+      "severidad": "media"
+    },
+    {
+      "grafemas": ["f", "t"],
+      "tipo": "confusion_visual",
+      "subtipo": "forma_similar",
+      "descripcion": "Trazo vertical con gancho.",
+      "severidad": "baja"
+    },
+    {
+      "grafemas": ["i", "j"],
+      "tipo": "confusion_visual",
+      "subtipo": "forma_similar",
+      "descripcion": "Trazo vertical con punto. La j tiene ademas un gancho inferior.",
+      "severidad": "baja"
+    },
+    {
+      "grafemas": ["v", "y"],
+      "tipo": "confusion_visual",
+      "subtipo": "forma_similar",
+      "descripcion": "Forma en angulo abierto.",
+      "severidad": "baja"
+    },
+    {
+      "grafemas": ["c", "o"],
+      "tipo": "confusion_visual",
+      "subtipo": "forma_similar",
+      "descripcion": "Oval abierto vs cerrado.",
+      "severidad": "baja"
+    },
+    {
+      "grafemas": ["h", "n"],
+      "tipo": "confusion_visual",
+      "subtipo": "forma_similar",
+      "descripcion": "Trazo vertical con arco lateral.",
+      "severidad": "baja"
+    },
+    {
+      "grafemas": ["g", "q"],
+      "tipo": "confusion_visual",
+      "subtipo": "forma_similar",
+      "descripcion": "Oval con trazo descendente.",
+      "severidad": "baja"
+    },
+    {
+      "grafemas": ["m", "w"],
+      "tipo": "confusion_visual",
+      "subtipo": "rotacion_180",
+      "descripcion": "La m invertida da la w.",
+      "severidad": "media"
+    },
+    {
+      "grafemas": ["r", "n"],
+      "tipo": "confusion_visual",
+      "subtipo": "forma_similar",
+      "descripcion": "Trazo final similar en escritura cursiva.",
+      "severidad": "baja"
+    }
+  ]
+}

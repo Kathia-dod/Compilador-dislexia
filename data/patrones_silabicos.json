@@ -1,0 +1,69 @@
+{
+  "descripcion": "Patrones silabicos de dificultad para personas con dislexia en español",
+  "fuentes": [
+    "https://asxlab.blogspot.com/2014/08/palabras-trabadas-cl-cr-dr-fl-fr-gl-gr.html",
+    "https://repositorio.unican.es/xmlui/bitstream/handle/10902/15215/SaizGonzalezNatalia.pdf"
+  ],
+  "categorias": {
+    "sinfon_con_l": {
+      "descripcion": "Grupos consonanticos con L. Primeros sinfones en adquirirse.",
+      "severidad": "media",
+      "patrones": ["bl", "cl", "fl", "gl", "pl"]
+    },
+    "sinfon_con_r": {
+      "descripcion": "Grupos consonanticos con R vibrante.",
+      "severidad": "alta",
+      "patrones": ["br", "cr", "dr", "fr", "gr", "pr", "tr"]
+    },
+    "silaba_inversa": {
+      "descripcion": "Silabas con consonante al final (coda). Generan omision o inversion en dislexia.",
+      "severidad": "alta",
+      "patrones": ["al", "el", "il", "ol", "ul", "ar", "er", "ir", "or", "ur",
+                   "an", "en", "in", "on", "un", "as", "es", "is", "os", "us"]
+    },
+    "diptongo": {
+      "descripcion": "Union de dos vocales en una misma silaba. Generan confusion en la segmentacion.",
+      "severidad": "media",
+      "patrones": ["ia", "ie", "io", "iu", "ua", "ue", "ui", "uo",
+                   "ai", "au", "ei", "eu", "oi", "ou"]
+    },
+    "triptongo": {
+      "descripcion": "Union de tres vocales. Dificultad de segmentacion silabica.",
+      "severidad": "alta",
+      "patrones": ["iai", "iei", "uai", "uei", "uau"]
+    },
+    "digrafo": {
+      "descripcion": "Dos letras que representan un solo sonido. Especialmente problematico en dislexia fonologica.",
+      "severidad": "alta",
+      "patrones": ["ch", "ll", "rr", "gu", "qu"]
+    },
+    "contexto_dependiente": {
+      "descripcion": "Grafemas cuyo sonido cambia segun la vocal siguiente. La misma letra produce sonidos distintos.",
+      "severidad": "alta",
+      "patrones": [
+        { "grafema": "c", "ante": ["a","o","u"], "sonido": "/k/" },
+        { "grafema": "c", "ante": ["e","i"],     "sonido": "/s/ o /z/ segun region" },
+        { "grafema": "g", "ante": ["a","o","u"], "sonido": "/g/" },
+        { "grafema": "g", "ante": ["e","i"],     "sonido": "/x/" },
+        { "grafema": "g", "ante": ["e","i"],     "con_u_muda": true, "sonido": "/g/ (la u es muda)" }
+      ]
+    },
+    "terminacion_problematica": {
+      "descripcion": "Terminaciones de palabras que generan errores de omision frecuentes.",
+      "severidad": "media",
+      "patrones": ["cion", "sion", "mente", "dad", "idad", "ncia", "anza"]
+    },
+    "inversion_silabica": {
+      "descripcion": "Pares de palabras reales donde se invierte el orden de silabas o letras y obtiene otra palabra valida. Dificil de detectar porque el resultado es ortograficamente correcto.",
+      "severidad": "alta",
+      "patrones_pares": [
+        ["pardo",   "prado"],
+        ["letargo", "lagarto"],
+        ["pala",    "lapa"],
+        ["arma",    "rama"],
+        ["ropa",    "paro"],
+        ["caro",    "arco"]
+      ]
+    }
+  }
+}

@@ -1,0 +1,140 @@
+{
+  "descripcion": "Palabras homofonas. Misma pronunciacion, distinta grafia. No pueden apoyarse en el sonido para distinguirlas.",
+  "nota": "El grupo tilde_diacritica no contiene homofonos en sentido estricto: son la misma palabra con distinta funcion gramatical.",
+  "fuentes": [
+    "https://www.tuescueladeespanol.es/blogs/palabras-homofonas-b-v/",
+    "https://www.diccionariodedudas.com/palabras-homofonas/",
+    "https://www.enforex.com/espanol/blog/palabras-homofonas/"
+  ],
+  "grupos": [
+    {
+      "tipo": "b_v",
+      "descripcion": "B y V tienen el mismo sonido en español.",
+      "pares": [
+        ["baca",    "vaca"],
+        ["bale",    "vale"],
+        ["barón",   "varón"],
+        ["basta",   "vasta"],
+        ["bate",    "vate"],
+        ["bello",   "vello"],
+        ["beta",    "veta"],
+        ["bienes",  "vienes"],
+        ["bolar",   "volar"],
+        ["botar",   "votar"],
+        ["cabo",    "cavo"],
+        ["grabar",  "gravar"],
+        ["hierba",  "hierva"],
+        ["nobel",   "novel"],
+        ["rebelar", "revelar"],
+        ["savia",   "sabia"],
+        ["tubo",    "tuvo"],
+        ["bota",    "vota"],
+        ["besar",   "vesar"],
+        ["bias",    "vías"],
+        ["boz",     "voz"],
+        ["combino", "convino"]
+      ]
+    },
+    {
+      "tipo": "h_muda",
+      "descripcion": "La H es muda en español.",
+      "pares": [
+        ["a",      "ha"],
+        ["asta",   "hasta"],
+        ["aya",    "haya"],
+        ["echo",   "hecho"],
+        ["ojear",  "hojear"],
+        ["ola",    "hola"],
+        ["ora",    "hora"],
+        ["as",     "has"],
+        ["abría",  "habría"],
+        ["arpa",   "harpa"],
+        ["inca",   "hinca"],
+        ["ice",    "hice"],
+        ["ato",    "hato"]
+      ]
+    },
+    {
+      "tipo": "ll_y",
+      "descripcion": "En el yeismo. LL e Y suenan igual.",
+      "pares": [
+        ["callado",  "cayado"],
+        ["halla",    "haya"],
+        ["malla",    "maya"],
+        ["pollo",    "poyo"],
+        ["pulla",    "puya"],
+        ["rallar",   "rayar"],
+        ["valla",    "vaya"],
+        ["arrollar", "arroyo"],
+        ["llama",    "yama"],
+        ["llave",    "yave"],
+        ["llorar",   "yorar"]
+      ]
+    },
+    {
+      "tipo": "s_c_z",
+      "descripcion": "S, C ante e/i, y Z suenan igual.",
+      "pares": [
+        ["casa",    "caza"],
+        ["maza",    "masa"],
+        ["cazo",    "caso"],
+        ["cien",    "sien"],
+        ["cocer",   "coser"],
+        ["ceda",    "seda"],
+        ["cima",    "sima"],
+        ["abrazar", "abrasar"],
+        ["tasa",    "taza"],
+        ["losa",    "loza"],
+        ["poso",    "pozo"],
+        ["roza",    "rosa"],
+        ["zumo",    "sumo"]
+      ]
+    },
+    {
+      "tipo": "g_j",
+      "descripcion": "G ante e/i y J ante cualquier vocal suenan igual.",
+      "pares": [
+        ["gira",    "jira"],
+        ["gerente", "jerente"],
+        ["gesto",   "jesto"],
+        ["gemido",  "jemido"]
+      ]
+    },
+    {
+      "tipo": "tilde_diacritica",
+      "descripcion": "Palabras que solo se distinguen por la tilde diacritica.",
+      "pares": [
+        ["aun",  "aún"],
+        ["el",   "él"],
+        ["mas",  "más"],
+        ["mi",   "mí"],
+        ["que",  "qué"],
+        ["se",   "sé"],
+        ["si",   "sí"],
+        ["solo", "sólo"],
+        ["te",   "té"],
+        ["tu",   "tú"],
+        ["de",   "dé"],
+        ["como", "cómo"]
+      ]
+    },
+    {
+      "tipo": "otros",
+      "descripcion": "Pares homofonos que no encajan en las categorias anteriores.",
+      "pares": [
+        ["acerbo",  "acervo"],
+        ["arrollo", "arroyo"],
+        ["baya", "vaya"],
+	["vaya", "valla"],
+        ["callo",   "cayo"],
+        ["echo",    "hecho"],
+        ["hierba",  "hierva"],
+        ["mallo",   "mayo"],
+        ["pollo",   "poyo"],
+        ["rallar",  "rayar"],
+        ["rebelar", "revelar"],
+        ["sabia",   "savia"]
+      ]
+    }
+  ]
+}

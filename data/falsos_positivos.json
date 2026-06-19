@@ -1,0 +1,64 @@
+{
+  "descripcion": "Casos que se debe excluir del reporte de dislexia aunque activen reglas de riesgo.",
+  "fuentes": [
+    "Criterio de implementacion propio basado en la estructura del AST generado por Fase 2"
+  ],
+  "reglas_exclusion": [
+    {
+      "id": "FP01",
+      "nombre": "nombre_propio",
+      "descripcion": "Palabra con inicioOracion=false y primera letra mayuscula. Alta probabilidad de ser nombre propio. No aplica si inicioOracion=true porque ahi la mayuscula es obligatoria.",
+      "condicion": "token.inicioOracion == false && primera_letra_es_mayuscula(token.valorOriginal)",
+      "accion": "excluir_del_reporte"
+    },
+    {
+      "id": "FP02",
+      "nombre": "dentro_de_url",
+      "descripcion": "Tokens de tipo TOKEN_URL no deben analizarse.",
+      "condicion": "token.tipo == TOKEN_URL",
+      "accion": "excluir_del_reporte"
+    },
+    {
+      "id": "FP03",
+      "nombre": "dentro_de_email",
+      "descripcion": "Tokens de tipo TOKEN_EMAIL no deben analizarse.",
+      "condicion": "token.tipo == TOKEN_EMAIL",
+      "accion": "excluir_del_reporte"
+    },
+    {
+      "id": "FP04",
+      "nombre": "numero_o_fecha",
+      "descripcion": "Tokens NUMERO, NUMERO_DECIMAL, FECHA, HORA, PORCENTAJE_VALOR no son palabras del texto natural.",
+      "condicion": "token.tipo IN [TOKEN_NUMERO, TOKEN_NUMERO_DECIMAL, TOKEN_FECHA, TOKEN_HORA, TOKEN_PORCENTAJE_VALOR]",
+      "accion": "excluir_del_reporte"
+    },
+    {
+      "id": "FP05",
+      "nombre": "dentro_de_cita",
+      "descripcion": "Palabras dentro de comillas dobles o simples (nodo FRASE_CITA en el AST). Pueden ser citas textuales o titulos donde la ortografia original debe respetarse. Atenuar el peso a la mitad en lugar de excluir completamente.",
+      "condicion": "nodo_padre.tipo == FRASE_CITA",
+      "accion": "reducir_peso_50_porciento"
+    },
+    {
+      "id": "FP06",
+      "nombre": "abreviatura",
+      "descripcion": "Patron PALABRA de 2-3 letras seguida de PUNTO sin salto de linea (Dr., Ing., Lic., km., etc.). El parser las emite como PALABRA+PUNTO; Fase 3 debe reconocer el patron para no marcar la parte alfabetica.",
+      "condicion": "token.valorNormal.length <= 3 && siguiente_token.tipo == TOKEN_PUNTO && !siguiente_token.inicioParrafo",
+      "accion": "excluir_del_reporte"
+    },
+    {
+      "id": "FP07",
+      "nombre": "sigla",
+      "descripcion": "Palabras en mayusculas de 2-4 letras (ADN, CPU, RAM, USB). Son siglas, no palabras que deban leerse fonologicamente.",
+      "condicion": "token.valorOriginal == token.valorOriginal.toUpperCase() && token.valorOriginal.length <= 4",
+      "accion": "excluir_del_reporte"
+    },
+    {
+      "id": "FP08",
+      "nombre": "palabra_muy_corta",
+      "descripcion": "Palabras de 1 letra (preposiciones sueltas: a, e, o, u, y). Son demasiado cortas para generar errores de complejidad silabica y activan muchas reglas sin valor diagnostico.",
+      "condicion": "token.valorNormal.length == 1",
+      "accion": "excluir_de_reglas_silabiicas"
+    }
+  ]
+}

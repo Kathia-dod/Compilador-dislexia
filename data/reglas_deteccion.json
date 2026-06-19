@@ -1,0 +1,187 @@
+{
+  "descripcion": "Reglas de deteccion para clasificar palabras de riesgo. El analizador semantico aplica estas reglas sobre el valorNormal de cada TOKEN_PALABRA.",
+  "fuentes": [
+    "https://repositorio.unican.es/xmlui/bitstream/handle/10902/15215/SaizGonzalezNatalia.pdf",
+    "https://www.redalyc.org/pdf/567/56750681021.pdf",
+    "https://disfam.org/wp-content/uploads/2022/08/Circular-SE-34-2022-Protocolos-para-la-deteccio%CC%81n-oportuna-de-la-dislexia.pdf"
+  ],
+  "orden_aplicacion": "Las reglas se aplican en orden numerico. Una palabra puede activar multiples reglas. Se aplican TODAS antes de calcular el peso total; no se detiene al primer match. Antes de aplicar cualquier regla, verificar falsos_positivos.json. Las categorias de salida (categoria_reporte) deben resolverse contra alias_categorias en modelo_ponderacion.json para obtener el peso_base correcto.",
+  "reglas": [
+    {
+      "id": "R01",
+      "nombre": "confusion_visual_grafema",
+      "descripcion": "La palabra contiene alguno de los grafemas de un par de confusion visual de severidad alta. Se restringe a pares de severidad alta para evitar sobre-disparo, ya que pares de severidad baja/media (a/e, m/n, c/o, h/n, etc.) aparecen en casi cualquier palabra del idioma.",
+      "tipo_verificacion": "contiene_grafema",
+      "archivo_referencia": "pares_visuales.json",
+      "campo": "grafemas",
+      "filtro_severidad_origen": "alta",
+      "condicion_adicional": "palabra.length >= 3",
+      "severidad": "alta",
+      "categoria_reporte_dinamica": "si grafema in [b,d,p,q] usar 'confusion_visual_b_d_p_q', si no usar 'confusion_visual_otros'",
+      "categoria_reporte": "CONFUSION_VISUAL"
+    },
+    {
+      "id": "R02",
+      "nombre": "sinfon_con_r",
+      "descripcion": "La palabra contiene un sinfon con R vibrante (br, cr, dr, fr, gr, pr, tr).",
+      "tipo_verificacion": "contiene_patron",
+      "patrones": ["br", "cr", "dr", "fr", "gr", "pr", "tr"],
+      "severidad": "alta",
+      "categoria_reporte": "sinfon_r"
+    },
+    {
+      "id": "R03",
+      "nombre": "sinfon_con_l",
+      "descripcion": "La palabra contiene un sinfon con L (bl, cl, fl, gl, pl).",
+      "tipo_verificacion": "contiene_patron",
+      "patrones": ["bl", "cl", "fl", "gl", "pl"],
+      "severidad": "media",
+      "categoria_reporte": "sinfon_l"
+    },
+    {
+      "id": "R04",
+      "nombre": "diptongo",
+      "descripcion": "La palabra contiene un diptongo. No se activa si la vocal debil del par tiene tilde en el texto original (eso indica hiato, no diptongo: ej. 'pais', 'dia').",
+      "tipo_verificacion": "contiene_patron",
+      "patrones": ["ia", "ie", "io", "iu", "ua", "ue", "ui", "uo",
+                   "ai", "au", "ei", "eu", "oi", "ou"],
+      "condicion_adicional": "no_hay_tilde_en_vocal_debil(valorOriginal)",
+      "severidad": "media",
+      "categoria_reporte": "diptongo"
+    },
+    {
+      "id": "R05",
+      "nombre": "digrafo",
+      "descripcion": "La palabra contiene un digrafo (ch, ll, rr, qu, gu).",
+      "tipo_verificacion": "contiene_patron",
+      "patrones": ["ch", "ll", "rr", "qu", "gu"],
+      "severidad": "alta",
+      "categoria_reporte": "digrafo"
+    },
+    {
+      "id": "R06",
+      "nombre": "homofono",
+      "descripcion": "La palabra pertenece a un grupo de homofonos en español. La categoria de reporte depende del subtipo (campo 'tipo' del grupo en homofonos.json).",
+      "tipo_verificacion": "busqueda_en_tabla",
+      "archivo_referencia": "homofonos.json",
+      "campo": "pares",
+      "severidad": "alta",
+      "categoria_reporte_dinamica": "'homofono_' + tipo_del_grupo (b_v, ll_y, s_c_z, g_j, h_muda, otros); si tipo_del_grupo == 'tilde_diacritica' usar categoria 'tilde_diacritica' directamente",
+      "categoria_reporte": "HOMOFONO"
+    },
+    {
+      "id": "R07",
+      "nombre": "palabra_larga",
+      "descripcion": "La palabra tiene 4 o mas silabas. Las palabras largas generan mayor carga cognitiva.",
+      "tipo_verificacion": "longitud_silabas",
+      "algoritmo_conteo": "ver seccion 'algoritmo_silabeo_sugerido' al final de este archivo",
+      "umbral_silabas": 4,
+      "severidad": "media",
+      "categoria_reporte": "longitud"
+    },
+    {
+      "id": "R08",
+      "nombre": "h_inicial_muda",
+      "descripcion": "La palabra comienza con H. La H es muda en español, lo que rompe la correspondencia grafema-fonema.",
+      "tipo_verificacion": "inicia_con",
+      "patron": "h",
+      "severidad": "media",
+      "categoria_reporte": "h_muda"
+    },
+    {
+      "id": "R09",
+      "nombre": "contexto_c",
+      "descripcion": "La palabra contiene C ante E o I, donde el sonido cambia segun la region.",
+      "tipo_verificacion": "patron_contextual",
+      "patrones": ["ce", "ci"],
+      "severidad": "alta",
+      "categoria_reporte": "contexto_dependiente"
+    },
+    {
+      "id": "R10",
+      "nombre": "contexto_g",
+      "descripcion": "La palabra contiene G ante E o I, donde suena /x/ en lugar de /g/. No se activa si la G esta seguida de 'gue'/'gui' con dieresis (gu muda ya cubierto por R05).",
+      "tipo_verificacion": "patron_contextual",
+      "patrones": ["ge", "gi"],
+      "severidad": "alta",
+      "categoria_reporte": "contexto_dependiente"
+    },
+    {
+      "id": "R11",
+      "nombre": "silaba_inversa_inicial",
+      "descripcion": "La palabra inicia con silaba inversa (consonante al final antes de vocal). Se exige que la palabra sea mas larga que el patron detectado, para no marcar palabras cortas que SON el patron completo (ej. 'el', 'un', 'al' no deben auto-marcarse).",
+      "tipo_verificacion": "patron_inicio",
+      "patrones": ["al", "el", "il", "ol", "ul", "ar", "er", "ir", "or", "ur",
+                   "an", "en", "in", "on", "un"],
+      "condicion_adicional": "palabra.length > patron.length + 1",
+      "severidad": "media",
+      "categoria_reporte": "silaba_inversa"
+    },
+    {
+      "id": "R12",
+      "nombre": "palabra_en_lista_riesgo",
+      "descripcion": "La palabra aparece directamente en la lista curada de palabras de riesgo. El peso se calcula sumando el peso_base de cada categoria en el campo 'riesgos' de la entrada (resuelto via alias_categorias), mas el modificador lista_curada_bonus.",
+      "tipo_verificacion": "busqueda_exacta",
+      "archivo_referencia": "palabras_riesgo.json",
+      "campo": "palabra",
+      "severidad": "segun_entrada",
+      "categoria_reporte": "LISTA_CURADA"
+    },
+    {
+      "id": "R13",
+      "nombre": "inversion_silabica",
+      "descripcion": "La palabra forma parte de un par de inversion silabica (pardo/prado, letargo/lagarto).",
+      "tipo_verificacion": "busqueda_en_tabla",
+      "archivo_referencia": "patrones_silabicos.json",
+      "campo": "inversion_silabica.patrones_pares",
+      "severidad": "alta",
+      "categoria_reporte": "inversion_silabica"
+    },
+    {
+      "id": "R14",
+      "nombre": "sight_word_con_riesgo",
+      "descripcion": "La palabra es una sight word (alta frecuencia) Y ademas activo alguna regla de riesgo anterior.",
+      "tipo_verificacion": "busqueda_en_tabla_y_tiene_riesgo_previo",
+      "archivo_referencia": "sight_words.json",
+      "campo": "palabras",
+      "severidad": "alta",
+      "categoria_reporte": "SIGHT_WORD",
+      "nota": "No tiene peso_base propio. Actua como modificador (sight_word_multiplier) sobre el peso ya acumulado por otras reglas."
+    },
+    {
+      "id": "R15",
+      "nombre": "triptongo",
+      "descripcion": "La palabra contiene un triptongo (union de tres vocales en una sola silaba).",
+      "tipo_verificacion": "contiene_patron",
+      "patrones": ["iai", "iei", "uai", "uei", "uau"],
+      "severidad": "alta",
+      "categoria_reporte": "triptongo"
+    },
+    {
+      "id": "R16",
+      "nombre": "terminacion_problematica",
+      "descripcion": "La palabra termina en una terminacion que genera errores de omision frecuentes en dislexia (cion, sion, mente, dad, idad, ncia, anza).",
+      "tipo_verificacion": "termina_con",
+      "patrones": ["cion", "sion", "mente", "dad", "idad", "ncia", "anza"],
+      "severidad": "media",
+      "categoria_reporte": "terminacion_problematica"
+    }
+  ],
+  "niveles_severidad": {
+    "alta":  "La palabra muy probablemente cause dificultad.",
+    "media": "La palabra puede causar dificultad dependiendo del lector.",
+    "baja":  "Dificultad menor."
+  },
+  "nota_implementacion": "Una palabra puede activar multiples reglas. El reporte agrupa por categoria_reporte ya resuelta via alias_categorias. Antes de aplicar cualquier regla, verificar falsos_positivos.json. El peso final de cada palabra se calcula con modelo_ponderacion.json. El campo severidad de R07 y R08 puede combinarse con otros riesgos para subir el nivel general de la palabra.",
+  "algoritmo_silabeo_sugerido": {
+    "descripcion": "R07 necesita un conteo real de silabas, no solo conteo de vocales, porque diptongos/triptongos cuentan como una sola silaba e hiatos cuentan como dos.",
+    "pasos": [
+      "1. Recorrer la palabra (valorNormal, en minusculas) identificando nucleos vocalicos: cada vocal o grupo de vocales contiguas es un nucleo candidato.",
+      "2. Dentro de un grupo de vocales contiguas, si hay una vocal fuerte (a,e,o) seguida o precedida de una vocal debil (i,u) sin tilde sobre la debil, forman UNA sola silaba (diptongo).",
+      "3. Si la vocal debil del grupo tiene tilde (i con acento, u con acento), se rompe el grupo en silabas separadas (hiato), ya que el lexer detecta tildes.",
+      "4. Dos vocales fuertes contiguas (a,e,o entre si) siempre forman hiato: cuentan como dos silabas.",
+      "5. Un grupo de tres vocales contiguas que cumple el patron de triptongo (debil+fuerte+debil, ej. 'uai') cuenta como UNA sola silaba.",
+      "6. El numero total de silabas es igual al numero de nucleos vocalicos resultantes tras aplicar las reglas 2-5."
+    ]
+  }
+}
