@@ -282,6 +282,7 @@ NodoSintactico AnalizadorSintactico::parseOracion() {
             NodoSintactico p;
 
             p.tipo = TipoNodo::PUNTUACION;
+            p.valorOriginal = tok.valorOriginal;
             p.valor = tok.valorOriginal;
             p.linea = tok.linea;
             p.columna = tok.columna;
@@ -365,18 +366,20 @@ AnalizadorSintactico::parseContenidoGeneral() {
         tok.tipo == TipoToken::PALABRA_COMPUESTA) {
 
         nodo.tipo = TipoNodo::PALABRA;
-        nodo.valor = tok.valorOriginal;
+        nodo.valor = tok.valorNormal;
+        nodo.valorOriginal = tok.valorOriginal;
     }
     else if (tok.tipo == TipoToken::NUMERO ||
              tok.tipo == TipoToken::NUMERO_DECIMAL) {
 
         nodo.tipo = TipoNodo::NUMERO;
         nodo.valor = tok.valorOriginal;
-    }
+        nodo.valorOriginal = tok.valorOriginal;    }
     else {
 
         nodo.tipo = TipoNodo::PUNTUACION;
         nodo.valor = tok.valorOriginal;
+        nodo.valorOriginal = tok.valorOriginal;
     }
 
     return nodo;
@@ -578,7 +581,9 @@ void AnalizadorSintactico::imprimirArbol(
          << nombreNodo(nodo.tipo)
          << RESET;
 
-    if (!nodo.valor.empty())
+    if (!nodo.valorOriginal.empty())
+        cout << " \"" << nodo.valorOriginal << "\"";
+    else if (!nodo.valor.empty())
         cout << " \"" << nodo.valor << "\"";
 
     cout << "\n";

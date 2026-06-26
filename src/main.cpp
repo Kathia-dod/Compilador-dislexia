@@ -2,9 +2,12 @@
 
 #include <iostream>
 #include <iomanip>
+#include <fstream>   
+#include <sstream>  
 
 #include "analizador_lexico.h"
 #include "analizador_sintactico.h"
+#include "analizador_semantico.h"
 
 using namespace std;
 
@@ -113,6 +116,15 @@ void mostrarErroresSintacticos(const AnalizadorSintactico& parser) {
     }
 }
 
+static string leerArchivoJson(const string& ruta) {
+    ifstream f(ruta);
+    if (!f.is_open())
+        throw runtime_error("No se pudo abrir el archivo JSON: " + ruta);
+    ostringstream ss;
+    ss << f.rdbuf();
+    return ss.str();
+}
+
 int main(int argc, char* argv[]) {
 
     string rutaEntrada = "input/prueba2.txt";
@@ -120,13 +132,20 @@ int main(int argc, char* argv[]) {
     if (argc >= 2)
         rutaEntrada = argv[1];
 
-    cout << BOLD
-         << "\nCOMPILADOR PARA DETECCION DE DIFICULTADES DE LECTURA\n"
-         << RESET;
+    string dirData = "data/";
+    if (argc >= 3) dirData = argv[2];
 
-    cout << "Archivo de entrada: "
-         << rutaEntrada
-         << "\n";
+    string rutaSalida = "output/reporte_dislexico.txt";
+    if (argc >= 4) rutaSalida = argv[3];
+
+
+
+    cout << BOLD << "\nCOMPILADOR PARA DETECCION DE DIFICULTADES DE LECTURA\n" << RESET;
+
+    cout << "Archivo de entrada : " << rutaEntrada << "\n";
+    cout << "Directorio data    : " << dirData << "\n";
+    cout << "Reporte salida     : " << rutaSalida << "\n";
+
 
     try {
 
@@ -142,6 +161,8 @@ int main(int argc, char* argv[]) {
         mostrarTokens(bufferTokens);
 
         mostrarErroresLexicos(lexer);
+
+        lexer.resetear();
 
         // IMPORTANTE:
         // El buffer ya fue consumido al imprimir tokens,
@@ -162,20 +183,54 @@ int main(int argc, char* argv[]) {
         mostrarErroresSintacticos(parser);
 
         // ─────────────────────────────────────
+        // ANALISIS SEMANTICO
+        // ─────────────────────────────────────
+        imprimirSeparador("FASE 3 - ANALISIS SEMANTICO DISLEXICO");
+ 
+        string jsonPonderacion    = leerArchivoJson(dirData + "modelo_ponderacion.json");
+        string jsonReglas         = leerArchivoJson(dirData + "reglas_deteccion.json");
+        string jsonPares          = leerArchivoJson(dirData + "pares_visuales.json");
+        string jsonSilabicos      = leerArchivoJson(dirData + "patrones_silabicos.json");
+        string jsonHomofonos      = leerArchivoJson(dirData + "homofonos.json");
+        string jsonPalabrasRiesgo = leerArchivoJson(dirData + "palabras_riesgo.json");
+        string jsonSightWords     = leerArchivoJson(dirData + "sight_words.json");
+        string jsonFalsosPos      = leerArchivoJson(dirData + "falsos_positivos.json");
+ 
+        AnalizadorSemantico semantico(
+            ast,
+            jsonPonderacion,
+            jsonReglas,
+            jsonPares,
+            jsonSilabicos,
+            jsonHomofonos,
+            jsonPalabrasRiesgo,
+            jsonSightWords,
+            jsonFalsosPos
+        );
+ 
+        ResultadoSemantico resultado = semantico.analizar();
+        semantico.imprimirReporte(resultado);
+ 
+        semantico.escribirReporte(resultado, rutaSalida);
+        cout << GREEN << "\nReporte guardado en: " << rutaSalida << RESET << "\n";
+
+
+        // ─────────────────────────────────────
         // RESUMEN FINAL
         // ─────────────────────────────────────
         imprimirSeparador("RESUMEN");
 
-        cout << "Errores lexicos: "
-             << lexer.obtenerErrores().size()
-             << "\n";
+        cout << "Errores lexicos: " << lexer.obtenerErrores().size() << "\n";
+        cout << "Errores sintacticos: " << parser.obtenerErrores().size() << "\n";
+        cout << "Palabras analizadas  : " << resultado.totalPalabrasAnalizables << "\n";
+        cout << "Palabras de riesgo   : " << resultado.palabrasRiesgo.size() << "\n";
+        cout << "Indicador dislexico  : " << fixed << setprecision(2)
+             << resultado.indicadorPorcentual << "%  ("
+             << resultado.nivelIndicador << ")\n";
+ 
 
-        cout << "Errores sintacticos: "
-             << parser.obtenerErrores().size()
-             << "\n";
 
-        if (!lexer.tieneErrores() &&
-            !parser.tieneErrores()) {
+        if (!lexer.tieneErrores() && !parser.tieneErrores()) {
 
             cout << GREEN
                  << "\nAnalisis completado correctamente.\n"
@@ -190,13 +245,7 @@ int main(int argc, char* argv[]) {
 
     }
     catch (const exception& e) {
-
-        cerr << RED
-             << "\nERROR FATAL: "
-             << e.what()
-             << RESET
-             << "\n";
-
+        cerr << RED << "\nERROR FATAL: " << e.what() << RESET << "\n";
         return 1;
     }
 

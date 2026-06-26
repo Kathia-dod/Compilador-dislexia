@@ -1,0 +1,167 @@
+ REPORTE DE ANALISIS DISLEXICO
+==========================================
+
+Palabras analizables : 39
+Palabras de riesgo   : 28
+Indicador            : 100.00%
+Nivel                : MUY_ALTO
+Descripcion          : El texto tiene una concentracion muy elevada de palabras de riesgo. Fuertemente sugestivo de dislexia.
+
+=======================
+PALABRAS IDENTIFICADAS
+Palabra : El  (L1:C1)
+Normal  : el
+Peso  : 2.40
+Flags : SIGHT_WORD (x3.0)
+Tipo(s)  : tilde_diacritica, sight_word
+
+Palabra : pescado  (L1:C14)
+Normal  : pescado
+Peso  : 2.50
+Tipo(s)  : confusion_visual_b_d_p_q
+
+Palabra : Qué  (L1:C25)
+Normal  : qué
+Peso  : 21.30
+Flags : SIGHT_WORD (x3.0)
+Tipo(s)  : confusion_visual_b_d_p_q, confusion_visual_otros, tilde_diacritica, digrafo, sight_word
+
+Palabra : el  (L1:C35)
+Normal  : el
+Peso  : 2.40
+Flags : SIGHT_WORD (x3.0)
+Tipo(s)  : tilde_diacritica, sight_word
+
+Palabra : perro  (L1:C38)
+Normal  : perro
+Peso  : 5.10
+Flags : LISTA_CURADA (+0.3)
+Tipo(s)  : confusion_visual_b_d_p_q, digrafo, lista_curada
+
+Palabra : El  (L1:C47)
+Normal  : el
+Peso  : 2.40
+Flags : SIGHT_WORD (x3.0)
+Tipo(s)  : tilde_diacritica, sight_word
+
+Palabra : perro  (L1:C50)
+Normal  : perro
+Peso  : 5.10
+Flags : LISTA_CURADA (+0.3)
+Tipo(s)  : confusion_visual_b_d_p_q, digrafo, lista_curada
+
+Palabra : huesos  (L1:C61)
+Normal  : huesos
+Peso  : 4.50
+Tipo(s)  : confusion_visual_otros, diptongo, h_muda
+
+Palabra : fue  (L3:C8)
+Normal  : fue
+Peso  : 9.00
+Flags : SIGHT_WORD (x3.0)
+Tipo(s)  : confusion_visual_otros, diptongo, sight_word
+
+Palabra : mercado  (L3:C15)
+Normal  : mercado
+Peso  : 2.50
+Tipo(s)  : confusion_visual_b_d_p_q
+
+Palabra : compró  (L3:C24)
+Normal  : compró
+Peso  : 4.50
+Tipo(s)  : confusion_visual_b_d_p_q, sinfon_r
+
+Palabra : manzanas  (L3:C32)
+Normal  : manzanas
+Peso  : 1.50
+Tipo(s)  : confusion_visual_otros
+
+Palabra : regresó  (L3:C43)
+Normal  : regresó
+Peso  : 1.50
+Tipo(s)  : sinfon_r
+
+Palabra : casa  (L3:C54)
+Normal  : casa
+Peso  : 2.00
+Tipo(s)  : homofono_s_c_z
+
+Palabra : Juan  (L4:C1)
+Normal  : juan
+Peso  : 3.00
+Tipo(s)  : confusion_visual_otros, diptongo
+
+Palabra : dijo  (L4:C6)
+Normal  : dijo
+Peso  : 2.50
+Tipo(s)  : confusion_visual_b_d_p_q
+
+Palabra : Hoy  (L4:C13)
+Normal  : hoy
+Peso  : 0.90
+Flags : LISTA_CURADA (+0.3)
+Flags : EN_CITA (x0.5)
+Tipo(s)  : h_muda, lista_curada
+
+Palabra : buen  (L4:C23)
+Normal  : buen
+Peso  : 2.75
+Flags : EN_CITA (x0.5)
+Tipo(s)  : confusion_visual_b_d_p_q, confusion_visual_otros, diptongo
+
+Palabra : día  (L4:C28)
+Normal  : día
+Peso  : 1.25
+Flags : EN_CITA (x0.5)
+Tipo(s)  : confusion_visual_b_d_p_q
+
+Palabra : Hola  (L6:C5)
+Normal  : hola
+Peso  : 3.50
+Tipo(s)  : homofono_h_muda, h_muda
+
+Palabra : cómo  (L6:C13)
+Normal  : cómo
+Peso  : 2.40
+Flags : SIGHT_WORD (x3.0)
+Tipo(s)  : tilde_diacritica, sight_word
+
+Palabra : estás  (L6:C19)
+Normal  : estás
+Peso  : 1.20
+Tipo(s)  : silaba_inversa
+
+Palabra : Muy  (L7:C5)
+Normal  : muy
+Peso  : 4.50
+Flags : SIGHT_WORD (x3.0)
+Tipo(s)  : confusion_visual_otros, sight_word
+
+Palabra : bien  (L7:C9)
+Normal  : bien
+Peso  : 16.50
+Flags : SIGHT_WORD (x3.0)
+Tipo(s)  : confusion_visual_b_d_p_q, confusion_visual_otros, diptongo, sight_word
+
+Palabra : gracias  (L7:C15)
+Normal  : gracias
+Peso  : 4.50
+Tipo(s)  : sinfon_r, diptongo, contexto_dependiente
+
+Palabra : El  (L9:C1)
+Normal  : el
+Peso  : 2.40
+Flags : SIGHT_WORD (x3.0)
+Tipo(s)  : tilde_diacritica, sight_word
+
+Palabra : precio  (L9:C4)
+Normal  : precio
+Peso  : 7.00
+Tipo(s)  : confusion_visual_b_d_p_q, sinfon_r, diptongo, contexto_dependiente
+
+Palabra : Llamar  (L9:C26)
+Normal  : llamar
+Peso  : 1.80
+Tipo(s)  : digrafo
+
+NOTA CLINICA: Este es un indicador computacional basado en la estructura linguistica del texto. El diagnostico de dislexia requiere evaluacion por un especialista.

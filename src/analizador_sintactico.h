@@ -29,6 +29,7 @@ enum class TipoNodo {
 struct NodoSintactico {
     TipoNodo tipo;
     string valor;
+    string valorOriginal;
     int linea;
     int columna;
     vector<NodoSintactico> hijos;
