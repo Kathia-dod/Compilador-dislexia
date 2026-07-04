@@ -202,9 +202,21 @@ ResultadoSemantico AnalizadorSemantico::analizar() {
     ResultadoSemantico res;
     recorrerNodo(ast_, false, res);
 
-    if (res.totalPalabrasAnalizables > 0)
-        res.indicadorPorcentual = min(100.0, (res.sumaPesos / res.totalPalabrasAnalizables) * 100.0);
-    else
+    if (res.totalPalabrasAnalizables > 0){
+
+        double promedio = res.sumaPesos / res.totalPalabrasAnalizables;
+
+        double sumaReferencia = 0.0;
+        for (const auto& par : pesos_)
+            sumaReferencia += par.second;
+
+        double pesoReferencia = pesos_.empty() ? 1.0
+                              : sumaReferencia / pesos_.size();
+
+        double factor = pesoReferencia * 2.0;
+
+        res.indicadorPorcentual = min(100.0, (promedio / factor) * 100.0);
+    }   else
         res.indicadorPorcentual = 0.0;
 
     res.nivelIndicador  = calcularNivel(res.indicadorPorcentual, res.descripcionNivel);
@@ -243,6 +255,19 @@ void AnalizadorSemantico::analizarPalabra(const NodoSintactico& nodo, bool dentr
     vector<CategoriaRiesgo> cats;
     aplicarReglas(valorNormal, valorOriginal, cats);
 
+    {
+        auto itH = tabla_homofonos_.find(valorNormal);
+        if (itH != tabla_homofonos_.end() && itH->second == "tilde_diacritica") {
+            if (valorOriginal != valorNormal) {
+                bool yaEsta = false;
+                for (auto& c : cats)
+                    if (c == CategoriaRiesgo::TILDE_DIACRITICA) { yaEsta = true; break; }
+                if (!yaEsta)
+                    cats.push_back(CategoriaRiesgo::TILDE_DIACRITICA);
+            }
+        }
+    }
+
     if (cats.empty()) return;
 
     ResultadoPalabra rp;
@@ -267,11 +292,35 @@ void AnalizadorSemantico::analizarPalabra(const NodoSintactico& nodo, bool dentr
 // Falsos positivos
 // ─────────────────────────────────────────────────────────────────────────
 bool AnalizadorSemantico::esFalsoPositivo(const NodoSintactico& nodo) const {
-    const string& v = nodo.valor;
-    if (v.empty()) return true;
-    if (v.size() == 1) return true;
-    // [AGREGADO] Consulta la tabla de falsos positivos cargada desde JSON.
-    if (falsos_positivos_.count(v)) return true;
+    const string& vNorm = nodo.valor;
+    const string& vOrig = nodo.valorOriginal;
+
+    if (vNorm.empty() || vNorm.size() == 1) return true;
+
+    // FP06 - abreviatura: 3 letras o menos
+    if (vNorm.size() <= 3) return true;
+
+    // FP07 - sigla: 4 letras o menos todo en mayusculas
+    if (vOrig.size() <= 4) {
+        bool todaMayus = true;
+        for (unsigned char c : vOrig) {
+            if (c < 'A' || c > 'Z') { todaMayus = false; break; }
+        }
+        if (todaMayus) return true;
+    }
+
+    // FP01 - nombre propio en medio de frase
+    if (!vOrig.empty() && !vNorm.empty()) {
+        unsigned char primerOrig = (unsigned char)vOrig[0];
+        unsigned char primerNorm = (unsigned char)vNorm[0];
+        if (primerOrig >= 'A' && primerOrig <= 'Z' &&
+            primerNorm >= 'a' && primerNorm <= 'z') {
+            if (!sight_words_.count(vNorm))
+                return true;
+        }
+    }
+
+    if (falsos_positivos_.count(vNorm)) return true;
     return false;
 }
 
@@ -306,16 +355,24 @@ void AnalizadorSemantico::aplicarReglas(const string& valorNormal, const string&
 void AnalizadorSemantico::reglaR01_confusionVisual(const string& v, vector<CategoriaRiesgo>& cats) const{
     if (v.size() < 3) return;
 
-    bool tieneBDPQ  = false;
-    bool tieneOtros = false;
+    int cntB=0, cntD=0, cntP=0, cntQ=0;
+    int cntU=0, cntN=0;
 
     for (char c : v) {
-        if (grafemas_alta_bdpq_.count(c)) tieneBDPQ  = true;
-        else if (grafemas_alta_.count(c)) tieneOtros = true;
+        if      (c == 'b') cntB++;
+        else if (c == 'd') cntD++;
+        else if (c == 'p') cntP++;
+        else if (c == 'q') cntQ++;
+        else if (c == 'u') cntU++;
+        else if (c == 'n') cntN++;
     }
 
-    if (tieneBDPQ)  cats.push_back(CategoriaRiesgo::CONFUSION_VISUAL_B_D_P_Q);
-    if (tieneOtros) cats.push_back(CategoriaRiesgo::CONFUSION_VISUAL_OTROS);
+    int distintosBDPQ = (cntB>0?1:0)+(cntD>0?1:0)+(cntP>0?1:0)+(cntQ>0?1:0);
+    if (distintosBDPQ >= 2)
+        cats.push_back(CategoriaRiesgo::CONFUSION_VISUAL_B_D_P_Q);
+
+    if (cntU > 0 && cntN > 0)
+        cats.push_back(CategoriaRiesgo::CONFUSION_VISUAL_OTROS);
 }
 
 // R02  Sinfón con R
@@ -358,7 +415,7 @@ void AnalizadorSemantico::reglaR06_homofono(const string& v, vector<CategoriaRie
     else if (tipo == "s_c_z")            cats.push_back(CategoriaRiesgo::HOMOFONO_S_C_Z);
     else if (tipo == "g_j")              cats.push_back(CategoriaRiesgo::HOMOFONO_G_J);
     else if (tipo == "h_muda")           cats.push_back(CategoriaRiesgo::HOMOFONO_H_MUDA);
-    else if (tipo == "tilde_diacritica") cats.push_back(CategoriaRiesgo::TILDE_DIACRITICA);
+    else if (tipo == "tilde_diacritica") { }
     else                                 cats.push_back(CategoriaRiesgo::HOMOFONO_OTROS);
 }
 
