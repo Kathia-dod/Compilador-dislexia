@@ -20,8 +20,11 @@ Este proyecto implementa un compilador básico utilizando C++, donde procesa el 
 ### Crear carpeta build
 
 ```bash
-g++ -o compilador src/main.cpp src/analizador_lexico.cpp
-./compilador input/prueba1.txt
+cd build
+cmake ..
+make
+cd ..
+./build/compilador
 ```
 
 

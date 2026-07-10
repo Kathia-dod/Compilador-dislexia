@@ -69,7 +69,8 @@ AnalizadorSemantico::AnalizadorSemantico(
     const string& jsonHomofonos,
     const string& jsonPalabrasRiesgo,
     const string& jsonSightWords,
-    const string& jsonFalsosPositivos
+    const string& jsonFalsosPositivos,
+    const string& jsonErroresTipicos
 )
 : ast_(ast)
 {
@@ -80,6 +81,7 @@ AnalizadorSemantico::AnalizadorSemantico(
     cargarPalabrasRiesgo(jsonPalabrasRiesgo);
     cargarSightWords(jsonSightWords);
     cargarFalsosPositivos(jsonFalsosPositivos);
+    cargarErroresTipicos(jsonErroresTipicos);
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -198,26 +200,46 @@ void AnalizadorSemantico::cargarFalsosPositivos(const string& contenido) {
     }
 }
 
+void AnalizadorSemantico::cargarErroresTipicos(const string& contenido) {
+    auto j = json::parse(contenido);
+    for (const auto& item : j["errores"]) {
+        string inc  = item["incorrecto"].get<string>();
+        string corr = item["correcto"].get<string>();
+        string tipo = item["tipo"].get<string>();
+        errores_tipicos_[inc] = {corr, tipo};
+    }
+}
+
 ResultadoSemantico AnalizadorSemantico::analizar() {
     ResultadoSemantico res;
     recorrerNodo(ast_, false, res);
 
-    if (res.totalPalabrasAnalizables > 0){
-
+    double promedioRiesgo = 0.0;
+    if (res.totalPalabrasAnalizables > 0) {
         double promedio = res.sumaPesos / res.totalPalabrasAnalizables;
 
-        double sumaReferencia = 0.0;
+        double sumaModelo = 0.0;
         for (const auto& par : pesos_)
-            sumaReferencia += par.second;
+            sumaModelo += par.second;
+        double promedioModelo = pesos_.empty() ? 1.5 : sumaModelo / pesos_.size();
 
-        double pesoReferencia = pesos_.empty() ? 1.0
-                              : sumaReferencia / pesos_.size();
+        double referencia = promedioModelo * 4.0;
+        promedioRiesgo = min(100.0, (promedio / referencia) * 100.0);
+    }
 
-        double factor = pesoReferencia * 2.0;
+    double componenteErrores = 0.0;
+    if (res.totalPalabrasAnalizables > 0) {
+        int numErrores = (int)res.erroresOrtograficos.size();
+        double proporcion = (double)numErrores / res.totalPalabrasAnalizables;
 
-        res.indicadorPorcentual = min(100.0, (promedio / factor) * 100.0);
-    }   else
-        res.indicadorPorcentual = 0.0;
+        // 30% de errores → 100% del componente.
+        componenteErrores = min(100.0, (proporcion / 0.20) * 100.0);
+    }
+
+    res.indicadorPorcentual = min(100.0, (componenteErrores * 0.70) + (promedioRiesgo * 0.30));
+
+    res.componenteErroresOrtograficos = componenteErrores;
+    res.componentePalabrasRiesgo = promedioRiesgo;
 
     res.nivelIndicador  = calcularNivel(res.indicadorPorcentual, res.descripcionNivel);
     return res;
@@ -265,6 +287,19 @@ void AnalizadorSemantico::analizarPalabra(const NodoSintactico& nodo, bool dentr
                 if (!yaEsta)
                     cats.push_back(CategoriaRiesgo::TILDE_DIACRITICA);
             }
+        }
+    }
+
+    {
+        auto itErr = errores_tipicos_.find(valorNormal);
+        if (itErr != errores_tipicos_.end()) {
+            ErrorOrtografico err;
+            err.palabraEncontrada = valorOriginal;
+            err.palabraCorrecta = itErr->second.first;
+            err.tipoError = itErr->second.second;
+            err.linea  = nodo.linea;
+            err.columna = nodo.columna;
+            res.erroresOrtograficos.push_back(err);
         }
     }
 
@@ -704,6 +739,9 @@ void AnalizadorSemantico::imprimirReporte(const ResultadoSemantico& res) const {
     cout << BOLD << "----------------------------------------\n" << RESET;
     cout << "Palabras analizables : " << res.totalPalabrasAnalizables << "\n";
     cout << "Suma de pesos        : " << fixed << setprecision(3) << res.sumaPesos << "\n";
+    cout << "Errores ortograficos : " << res.erroresOrtograficos.size() << "\n";
+    cout << "Componente errores : " << fixed << setprecision(2) << res.componenteErroresOrtograficos << "% (peso 80%)\n";
+    cout << "Componente riesgo  : " << fixed << setprecision(2) << res.componentePalabrasRiesgo << "% (peso 20%)\n";
     cout << "Indicador porcentual : ";
 
     string color;
@@ -718,6 +756,25 @@ void AnalizadorSemantico::imprimirReporte(const ResultadoSemantico& res) const {
     cout << "                       " << res.descripcionNivel << "\n\n";
     cout << YELLOW << "NOTA: Indicador computacional de riesgo linguistico.\n"
          << "El diagnostico clinico requiere evaluacion por especialista.\n" << RESET;
+
+    if (!res.erroresOrtograficos.empty()) {
+        cout << BOLD << RED
+             << "\n========================================\n"
+             << " ERRORES ORTOGRAFICOS DISLEXICOS\n"
+             << "========================================\n"
+             << RESET;
+        cout << BOLD << "Errores de escritura detectados ("
+             << res.erroresOrtograficos.size() << "):\n\n" << RESET;
+
+        for (const auto& err : res.erroresOrtograficos) {
+            cout << RED << "  \"" << err.palabraEncontrada << "\""
+                 << RESET << "  ->  deberia ser: "
+                 << GREEN << "\"" << err.palabraCorrecta << "\""
+                 << RESET
+                 << "  (L" << err.linea << ":C" << err.columna << ")\n";
+            cout << "      tipo: " << err.tipoError << "\n\n";
+        }
+    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -735,17 +792,16 @@ void AnalizadorSemantico::escribirReporte(const ResultadoSemantico& res,
 
     f << "Palabras analizables : " << res.totalPalabrasAnalizables << "\n";
     f << "Palabras de riesgo   : " << res.palabrasRiesgo.size() << "\n";
-    f << "Indicador            : " << fixed << setprecision(2)
-      << res.indicadorPorcentual << "%\n";
+    f << "Errores ortograficos : " << res.erroresOrtograficos.size() << "\n";
+    f << "Componente errores   : " << fixed << setprecision(2) << res.componenteErroresOrtograficos << "% (peso 70%)\n";
+    f << "Componente riesgo    : " << fixed << setprecision(2) << res.componentePalabrasRiesgo << "% (peso 30%)\n";
+    f << "Indicador            : " << fixed << setprecision(2) << res.indicadorPorcentual << "%\n";
     f << "Nivel                : " << res.nivelIndicador << "\n";
     f << "Descripcion          : " << res.descripcionNivel << "\n\n";
     f << "=======================\n";
     f << "PALABRAS IDENTIFICADAS\n";
 
     for (const auto& rp : res.palabrasRiesgo) {
-        // [CAMBIADO] Igual que en imprimirReporte: antes mostraba el valor
-        // normalizado porque rp.valorOriginal estaba mal asignado.
-        // Ahora muestra el texto original del archivo.
         f << "Palabra : " << rp.valorOriginal << "  (L" << rp.linea << ":C" << rp.columna << ")\n";
         f << "Normal  : " << rp.valorNormal << "\n";
         f << "Peso  : " << fixed << setprecision(2) << rp.pesoFinal << "\n";
@@ -758,6 +814,18 @@ void AnalizadorSemantico::escribirReporte(const ResultadoSemantico& res,
             f << nombreCategoria(rp.categorias[i]);
         }
         f << "\n\n";
+    }
+
+    if (!res.erroresOrtograficos.empty()) {
+        f << "\n==========================================\n";
+        f << "ERRORES ORTOGRAFICOS DISLEXICOS\n";
+        f << "==========================================\n\n";
+        for (const auto& err : res.erroresOrtograficos) {
+            f << "Encontrado : " << err.palabraEncontrada
+              << "  (L" << err.linea << ":C" << err.columna << ")\n";
+            f << "Correcto   : " << err.palabraCorrecta << "\n";
+            f << "Tipo error : " << err.tipoError << "\n\n";
+        }
     }
 
     f << "NOTA CLINICA: Este es un indicador computacional basado en la estructura linguistica del texto. El diagnostico de dislexia requiere evaluacion por un especialista.\n";

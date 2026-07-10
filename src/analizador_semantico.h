@@ -56,13 +56,25 @@ struct ResultadoPalabra {
     bool enFraseCita    = false;  
 };
 
+struct ErrorOrtografico {
+    string palabraEncontrada;  
+    string palabraCorrecta;    
+    string tipoError;     
+    int linea;
+    int columna;
+};
+
 struct ResultadoSemantico {
     vector<ResultadoPalabra> palabrasRiesgo;
+    vector<ErrorOrtografico> erroresOrtograficos;
 
     int totalPalabrasAnalizables = 0;
-    double sumaPesos             = 0.0;
+    double sumaPesos = 0.0;
 
-    double indicadorPorcentual   = 0.0;
+    double indicadorPorcentual = 0.0;
+
+    double componenteErroresOrtograficos = 0.0;
+    double componentePalabrasRiesgo      = 0.0;
 
     string nivelIndicador;        // BAJO / MODERADO / ALTO / MUY_ALTO
     string descripcionNivel;
@@ -80,7 +92,8 @@ public:
         const string& jsonHomofonos,        // homofonos.json
         const string& jsonPalabrasRiesgo,   // palabras_riesgo.json
         const string& jsonSightWords,       // sight_words.json
-        const string& jsonFalsosPositivos   // falsos_positivos.json
+        const string& jsonFalsosPositivos,  // falsos_positivos.json
+        const string& jsonErroresTipicos    // errores_tipicos.json
     );
 
     ResultadoSemantico analizar();
@@ -116,6 +129,8 @@ private:
 
     unordered_set<string> falsos_positivos_;
 
+    unordered_map<string, pair<string,string>> errores_tipicos_;
+
     // modelo_ponderacion
     unordered_map<string,double> pesos_; 
     double modificador_sight_word_ = 3.0;
@@ -133,6 +148,7 @@ private:
     void cargarPalabrasRiesgo(const string& json);
     void cargarSightWords(const string& json);
     void cargarFalsosPositivos(const string& json);
+    void cargarErroresTipicos(const string& json);
 
     void recorrerNodo(const NodoSintactico& nodo, bool dentroFraseCita, ResultadoSemantico& res);
 

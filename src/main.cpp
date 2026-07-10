@@ -195,6 +195,7 @@ int main(int argc, char* argv[]) {
         string jsonPalabrasRiesgo = leerArchivoJson(dirData + "palabras_riesgo.json");
         string jsonSightWords     = leerArchivoJson(dirData + "sight_words.json");
         string jsonFalsosPos      = leerArchivoJson(dirData + "falsos_positivos.json");
+        string jsonErroresTipicos = leerArchivoJson(dirData + "errores_tipicos.json");
  
         AnalizadorSemantico semantico(
             ast,
@@ -205,7 +206,8 @@ int main(int argc, char* argv[]) {
             jsonHomofonos,
             jsonPalabrasRiesgo,
             jsonSightWords,
-            jsonFalsosPos
+            jsonFalsosPos,
+            jsonErroresTipicos
         );
  
         ResultadoSemantico resultado = semantico.analizar();
@@ -224,6 +226,7 @@ int main(int argc, char* argv[]) {
         cout << "Errores sintacticos: " << parser.obtenerErrores().size() << "\n";
         cout << "Palabras analizadas  : " << resultado.totalPalabrasAnalizables << "\n";
         cout << "Palabras de riesgo   : " << resultado.palabrasRiesgo.size() << "\n";
+        cout << "Errores ortograficos : " << resultado.erroresOrtograficos.size() << "\n"; 
         cout << "Indicador dislexico  : " << fixed << setprecision(2)
              << resultado.indicadorPorcentual << "%  ("
              << resultado.nivelIndicador << ")\n";
