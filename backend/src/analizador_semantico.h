@@ -191,4 +191,26 @@ private:
     string colorCategoria(CategoriaRiesgo cat) const;
 };
 
+// Nuevo struct para el resultado de comparación
+struct ErrorComparacion {
+    int posicion;                 // índice en la palabra esperada
+    char letraEsperada;
+    char letraIngresada;
+    std::string tipoError;        // "ROTACION_VISUAL", "HOMOFONO", "OMISION", "INSERCION", "INVERSION", "OTRO"
+    double peso;
+    std::string descripcion;      // opcional
+};
+
+struct ResultadoComparacion {
+    std::string palabraEsperada;
+    std::string palabraIngresada;
+    double scoreGlobal;           // 0.0 - 1.0 (o porcentaje)
+    std::string nivelRiesgo;      // "BAJO", "MODERADO", "ALTO", "MUY_ALTO"
+    std::vector<ErrorComparacion> errores;
+};
+
+// Nuevo método público
+ResultadoComparacion compararPalabras(const std::string& esperada,
+                                      const std::string& ingresada);
+
 #endif 

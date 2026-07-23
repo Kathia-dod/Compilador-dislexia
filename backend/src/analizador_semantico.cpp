@@ -830,3 +830,25 @@ void AnalizadorSemantico::escribirReporte(const ResultadoSemantico& res,
 
     f << "NOTA CLINICA: Este es un indicador computacional basado en la estructura linguistica del texto. El diagnostico de dislexia requiere evaluacion por un especialista.\n";
 }
+
+struct OperacionAlineacion {
+    enum Tipo { MATCH, SUSTITUCION, INSERCION, ELIMINACION, TRANS_POSICION };
+    Tipo tipo;
+    int posEsperada;   // índice en esperada (para MATCH, SUST, ELIM)
+    int posIngresada;  // índice en ingresada (para MATCH, SUST, INS)
+    char charEsp;
+    char charIng;
+};
+
+std::vector<OperacionAlineacion> alinearPalabras(const std::string& esp,
+                                                  const std::string& ing) {
+    // Usamos programación dinámica con costos personalizados
+    // Costos: match=0, sustitución=1 (o menos si es error típico),
+    // inserción/eliminación=1, transposición=1 (opcional)
+    // Para simplificar, usamos Levenshtein estándar y luego reconstruimos.
+    // Pero para detectar transposiciones, podemos usar Damerau-Levenshtein.
+    // Implementaré una versión simple que detecta transposiciones en el post-procesamiento.
+    
+    // ... (código de DP y backtracking)
+    // Debe llenar el vector de operaciones.
+}

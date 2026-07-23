@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Estimación de Dislexia – Dictado</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=OpenDyslexic&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🔊 Dictado para Estimación de Dislexia</h1>
+      <p class="disclaimer">⚠️ Herramienta de tamizaje – No reemplaza un diagnóstico clínico.</p>
+    </header>
+
+    <main>
+      <section class="audio-controls">
+        <button id="btnPlayAudio" aria-label="Reproducir palabra">▶ Reproducir</button>
+        <div class="speed-control">
+          <label for="speedSelect">Velocidad:</label>
+          <select id="speedSelect">
+            <option value="0.75">0.75x</option>
+            <option value="1.0" selected>1.0x</option>
+            <option value="1.25">1.25x</option>
+          </select>
+        </div>
+      </section>
+
+      <section class="input-area">
+        <label for="palabraInput">Escribe la palabra que escuchaste:</label>
+        <input type="text" id="palabraInput" placeholder="Ej: biblioteca" autofocus>
+        <button id="btnEnviar" class="primary">Analizar</button>
+      </section>
+
+      <section id="resultados" class="resultados hidden">
+        <h2>Resultado del Análisis</h2>
+        <div id="palabraEsperadaDisplay" class="palabra-esperada"></div>
+        <div id="palabraIngresadaDisplay" class="palabra-ingresada"></div>
+        <div id="scoreDisplay" class="score"></div>
+        <div id="nivelDisplay" class="nivel"></div>
+        <div id="erroresList" class="errores-list"></div>
+        <div class="disclaimer-final">
+          <small>Este resultado es un indicador computacional. Consulte a un especialista para un diagnóstico certero.</small>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="js/main.js"></script>
+</body>
+</html>

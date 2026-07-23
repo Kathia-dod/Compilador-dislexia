@@ -4,6 +4,7 @@ project(Compilador_dislexia)
 set(CMAKE_CXX_STANDARD 17)
 
 # Ubuntu/Debian: sudo apt install nlohmann-json3-dev
+#Ubuntu/Debian: sudo apt install npm
 find_package(nlohmann_json REQUIRED)
 
 add_executable(compilador

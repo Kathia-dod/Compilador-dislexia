@@ -1,0 +1,218 @@
+/* Reset y base */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'OpenDyslexic', 'Comic Sans MS', sans-serif;
+  background-color: #f5f2f0;
+  color: #1e1e1e;
+  line-height: 1.6;
+  padding: 2rem;
+  max-width: 800px;
+  margin: 0 auto;
+  background-image: radial-gradient(circle, #e0d6d0 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.container {
+  background: rgba(255, 255, 255, 0.9);
+  padding: 2rem;
+  border-radius: 24px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+}
+
+header h1 {
+  font-size: 2rem;
+  color: #1a3b5d;
+  margin-bottom: 0.5rem;
+}
+
+.disclaimer {
+  background: #fff3cd;
+  padding: 0.75rem;
+  border-radius: 8px;
+  border-left: 6px solid #ffc107;
+  font-weight: bold;
+  margin-bottom: 1.5rem;
+}
+
+.audio-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+
+.audio-controls button {
+  background: #2b5b84;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 40px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: 0.2s;
+  font-family: inherit;
+}
+.audio-controls button:hover {
+  background: #1d3f5e;
+  transform: scale(1.02);
+}
+
+.speed-control {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.speed-control select {
+  padding: 0.4rem 0.8rem;
+  font-size: 1rem;
+  border-radius: 8px;
+  border: 1px solid #aaa;
+  background: white;
+}
+
+.input-area {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin: 1.5rem 0;
+  align-items: center;
+}
+.input-area label {
+  flex: 1 0 100%;
+}
+.input-area input {
+  flex: 2;
+  padding: 0.75rem 1rem;
+  font-size: 1.2rem;
+  border: 2px solid #ccc;
+  border-radius: 12px;
+  font-family: inherit;
+  min-width: 200px;
+}
+.input-area input:focus {
+  border-color: #2b5b84;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(43, 91, 132, 0.3);
+}
+.input-area button {
+  flex: 0 0 auto;
+  padding: 0.75rem 2rem;
+  background: #1a7a5a;
+  color: white;
+  border: none;
+  border-radius: 40px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: 0.2s;
+  font-family: inherit;
+}
+.input-area button:hover {
+  background: #0f5a42;
+}
+
+.resultados {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+.resultados.hidden {
+  display: none;
+}
+
+.palabra-esperada, .palabra-ingresada {
+  font-size: 1.8rem;
+  letter-spacing: 0.1em;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #e0e0e0;
+}
+.palabra-esperada strong {
+  color: #2b5b84;
+}
+.palabra-ingresada strong {
+  color: #1a7a5a;
+}
+
+.score {
+  font-size: 1.2rem;
+  margin: 0.5rem 0;
+}
+.nivel {
+  font-size: 1.5rem;
+  font-weight: bold;
+  padding: 0.3rem 0.8rem;
+  border-radius: 30px;
+  display: inline-block;
+  background: #e0e0e0;
+}
+.nivel.BAJO { background: #28a745; color: white; }
+.nivel.MEDIO { background: #ffc107; color: #1e1e1e; }
+.nivel.ALTO { background: #dc3545; color: white; }
+
+.errores-list {
+  margin-top: 1rem;
+}
+.errores-list .error-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #f0f0f0;
+  flex-wrap: wrap;
+}
+.errores-list .error-item .letra {
+  font-size: 1.5rem;
+  font-weight: bold;
+  min-width: 2rem;
+  text-align: center;
+}
+.errores-list .error-item .tipo {
+  background: #e9ecef;
+  padding: 0.2rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+}
+.errores-list .error-item .audio-btn {
+  background: none;
+  border: none;
+  font-size: 1.3rem;
+  cursor: pointer;
+  color: #2b5b84;
+}
+.errores-list .error-item .audio-btn:hover {
+  color: #1a3b5d;
+}
+/* Colores por tipo de error */
+.ROTACION_VISUAL { color: #e74c3c; }
+.INVERSION { color: #e67e22; }
+.OMISION { color: #f1c40f; }
+.SUSTITUCION_FONETICA { color: #8e44ad; }
+.OTRO { color: #7f8c8d; }
+
+.disclaimer-final {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: #fff3cd;
+  border-radius: 8px;
+  border-left: 6px solid #ffc107;
+  font-size: 0.9rem;
+}
+
+/* High contrast */
+@media (prefers-contrast: high) {
+  body {
+    background: #fff;
+  }
+  .container {
+    background: white;
+    box-shadow: none;
+    border: 2px solid black;
+  }
+}
