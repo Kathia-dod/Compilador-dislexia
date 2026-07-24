@@ -18,28 +18,28 @@ const COMPILER_PATH = path.join(__dirname, '..', 'backend', 'build', 'compilador
 // Endpoint principal de análisis
 app.post('/api/analizar', async (req, res) => {
   try {
-    const { palabraEsperada, palabraIngresada } = req.body;
+    const { textoReferencia, textoUsuario } = req.body;
 
-    if (!palabraEsperada || typeof palabraEsperada !== 'string') {
-      return res.status(400).json({ error: 'Se requiere "palabraEsperada"' });
+    if (!textoReferencia || typeof textoReferencia !== 'string') {
+      return res.status(400).json({ error: 'Se requiere "textoReferencia"' });
     }
-    if (!palabraIngresada || typeof palabraIngresada !== 'string') {
-      return res.status(400).json({ error: 'Se requiere "palabraIngresada"' });
+    if (!textoUsuario || typeof textoUsuario !== 'string') {
+      return res.status(400).json({ error: 'Se requiere "textoUsuario"' });
     }
 
     // Verificar que el ejecutable existe
     if (!fs.existsSync(COMPILER_PATH)) {
-      return res.status(500).json({ 
-        error: 'Ejecutable no encontrado. Compile el backend con CMake.' 
+      return res.status(500).json({
+        error: 'Ejecutable no encontrado. Compile el backend con CMake.'
       });
     }
 
-    // Invocar al ejecutable C++ pasando las dos palabras por stdin
+    // Invocar al ejecutable C++ pasando los dos textos por stdin
     const child = spawn(COMPILER_PATH, [], { stdio: ['pipe', 'pipe', 'pipe'] });
 
-    // Escribir en stdin: primera línea = palabra esperada, segunda = palabra ingresada
-    child.stdin.write(palabraEsperada + '\n');
-    child.stdin.write(palabraIngresada + '\n');
+    // Escribir en stdin: primera línea = referencia, segunda = usuario
+    child.stdin.write(textoReferencia + '\n');
+    child.stdin.write(textoUsuario + '\n');
     child.stdin.end();
 
     let stdout = '';
@@ -56,9 +56,9 @@ app.post('/api/analizar', async (req, res) => {
     child.on('close', (code) => {
       if (code !== 0) {
         console.error('Error en el ejecutable C++:', stderr);
-        return res.status(500).json({ 
-          error: 'Error en el motor de análisis', 
-          detalle: stderr 
+        return res.status(500).json({
+          error: 'Error en el motor de análisis',
+          detalle: stderr
         });
       }
 
@@ -69,8 +69,8 @@ app.post('/api/analizar', async (req, res) => {
       } catch (parseError) {
         console.error('Error parseando JSON:', parseError);
         console.error('Salida recibida:', stdout);
-        return res.status(500).json({ 
-          error: 'Respuesta inválida del motor de análisis' 
+        return res.status(500).json({
+          error: 'Respuesta inválida del motor de análisis'
         });
       }
     });
