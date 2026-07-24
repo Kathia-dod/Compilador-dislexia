@@ -31,18 +31,28 @@ document.addEventListener('DOMContentLoaded', () => {
   const nivelDisplay = document.getElementById('nivelDisplay');
   const erroresList = document.getElementById('erroresList');
 
-  let textoReferenciaActual = '';
+  // Variable global que almacena el texto de referencia (oculto al usuario)
+  let currentReferenceText = '';
 
-  // ====== Cargar ejemplo al seleccionar ======
+  // ====== Cargar ejemplo al seleccionar (sin mostrar el texto) ======
   function cargarEjemplo(id) {
     const ej = EJEMPLOS[id];
     if (!ej) return;
-    textoReferenciaActual = ej.texto;
-    textoInput.value = ej.texto;
+
+    // Guardar el texto de referencia en memoria (NUNCA se muestra en el textarea)
+    currentReferenceText = ej.texto;
+
+    // Cargar el audio correspondiente
     audioPlayer.src = ej.audio;
     audioPlayer.load();
+
+    // Limpiar el área de texto y poner el placeholder
+    textoInput.value = '';
+    textoInput.placeholder = 'Escucha el audio y escribe aquí lo que entiendas…';
+
     // Ocultar resultados anteriores
     resultadosDiv.classList.add('hidden');
+
     // Resetear tiempos del reproductor
     tiempoActual.textContent = '0:00';
     tiempoTotal.textContent = '0:00';
@@ -54,10 +64,10 @@ document.addEventListener('DOMContentLoaded', () => {
     cargarEjemplo(id);
   });
 
-  // Cargar el primer ejemplo por defecto
+  // Cargar el primer ejemplo por defecto (sin mostrar el texto)
   cargarEjemplo(1);
 
-  // ====== Reproductor de audio ======
+  // ====== Reproductor de audio (sin cambios) ======
   function formatTime(seconds) {
     if (isNaN(seconds)) return '0:00';
     const m = Math.floor(seconds / 60);
@@ -96,10 +106,10 @@ document.addEventListener('DOMContentLoaded', () => {
   btnAnalizar.addEventListener('click', async () => {
     const textoUsuario = textoInput.value.trim();
     if (!textoUsuario) {
-      alert('Por favor, escribe o selecciona un texto para analizar.');
+      alert('Por favor, escribe lo que hayas escuchado antes de analizar.');
       return;
     }
-    if (!textoReferenciaActual) {
+    if (!currentReferenceText) {
       alert('No hay texto de referencia. Selecciona un ejemplo primero.');
       return;
     }
@@ -112,8 +122,8 @@ document.addEventListener('DOMContentLoaded', () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          textoReferencia: textoReferenciaActual,
-          textoUsuario: textoUsuario
+          textoReferencia: currentReferenceText,   // texto oculto en memoria
+          textoUsuario: textoUsuario               // lo que escribió el usuario
         })
       });
 
@@ -133,14 +143,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // ====== Renderizado de resultados ======
+  // ====== Renderizado de resultados (ahora muestra el texto de referencia) ======
   function mostrarResultados(resultado) {
     resultadosDiv.classList.remove('hidden');
 
-    // --- Texto con resaltado de caracteres ---
-    const ref = resultado.palabraEsperada;
+    // --- Mostrar el texto de referencia (ahora visible) con resaltado ---
+    const ref = resultado.palabraEsperada;  // viene del backend
     const errores = resultado.errores || [];
-    // Crear un mapa de posiciones con errores
     const errorMap = new Map();
     errores.forEach(err => {
       errorMap.set(err.posicion, err);
@@ -200,7 +209,6 @@ document.addEventListener('DOMContentLoaded', () => {
         descSpan.textContent = err.descripcion || '';
         item.appendChild(descSpan);
 
-        // Botón de audio (reproduce la letra esperada con síntesis de voz)
         const audioBtn = document.createElement('button');
         audioBtn.className = 'audio-btn';
         audioBtn.textContent = '🔊';

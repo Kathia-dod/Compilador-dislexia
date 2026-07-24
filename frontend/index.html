@@ -40,14 +40,22 @@
         <audio id="audioPlayer" preload="metadata" style="display:none;"></audio>
       </section>
 
-      <!-- Área de texto -->
+      <!-- Área de texto (limpia, sin texto de referencia) -->
       <section class="input-area">
-        <label for="textoInput">Escribe o modifica el texto que escuchaste:</label>
-        <textarea id="textoInput" rows="6" placeholder="El texto aparecerá aquí al seleccionar un ejemplo..."></textarea>
+        <label for="textoInput">Escucha el audio y escribe aquí lo que entiendas:</label>
+        <textarea 
+          id="textoInput" 
+          rows="6" 
+          placeholder="Escribe lo que escuches…" 
+          autocomplete="off" 
+          autocorrect="off" 
+          autocapitalize="off" 
+          spellcheck="false"
+        ></textarea>
         <button id="btnAnalizar" class="primary">🔍 Analizar Texto</button>
       </section>
 
-      <!-- Resultados -->
+      <!-- Resultados (se muestra después del análisis) -->
       <section id="resultados" class="resultados hidden">
         <h2>Resultado del Análisis</h2>
         <div id="textoOriginalDisplay" class="texto-original"></div>
