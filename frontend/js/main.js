@@ -1,58 +1,119 @@
 document.addEventListener('DOMContentLoaded', () => {
-  // Elementos
-  const audioBtn = document.getElementById('btnPlayAudio');
+  // ====== Datos de los ejemplos (solo texto y audio) ======
+  const EJEMPLOS = {
+    1: {
+      texto: "Un día, un perro llamado Dino fue al parque a jugar con su pelota blanda. De repente, vio a un gran oso pardo que bebía agua de una fuente. Dino, que era muy valiente pero un poco torpe, quiso jugar con él. Cuando llegó corriendo, el oso levantó su gran cabeza y gruñó con fuerza. Dino sintió un poco de miedo y dio un paso atrás. Pero el oso, en realidad, era amigable. Se puso a buscar una piedra para lanzársela a Dino y jugar a la pelota. Dino, después de la sorpresa, movió la cola y comió la comida que llevaba en su mochila. Al final, se pusieron a jugar juntos hasta que el sol se puso. Fue un día muy especial para el perro y el oso.",
+      audio: "assets/Ejemplo1.m4a"
+    },
+    2: {
+      texto: "Un hombre de pueblo llamado Francisco tenía un problema muy grande. Había perdido su libro favorito, un grueso volumen de historias de dragones. Su amigo Pedro, que era muy tranquilo, le prometió ayudar a encontrarlo. Primero, revisaron la biblioteca del pueblo, pero no estaba. Después, preguntaron en la plaza a una señora que paseaba a su perro. La señora les dijo que había visto un libro verde cerca del puente sobre el río. Corrieron al puente y, entre las flores y la hierba, encontraron el libro de Francisco, completamente mojado por la lluvia. Francisco, triste pero contento, lo secó al sol y prometió no volver a perderlo.",
+      audio: "assets/Ejemplo2.m4a"
+    },
+    3: {
+      texto: "Esta mañana, he ido a visitar a mi abuela a su casa en el campo. Ella me ha preparado un vaso de leche con galletas y me ha contado una historia muy antigua. Me ha dicho que hace muchos años, en su huerto, había una vaca que se llamaba \"Baca\" y un buey llamado \"Buey\". También había una higuera enorme donde los pájaros hacían sus nidos. Mi abuela dice que ha visto cosas asombrosas allí. Una vez, oyó un ruido extraño y vio una hoja que se movía sola. Resultó ser un erizo que había hecho su hogar bajo las hortensias. Después de la merienda, me puse a jugar con mi hermana y hasta nos atrevimos a subir al árbol más alto. Fue una hora inolvidable.",
+      audio: "assets/Ejemplo3.m4a"
+    }
+  };
+
+  // ====== Referencias DOM ======
+  const ejemploSelect = document.getElementById('ejemploSelect');
+  const textoInput = document.getElementById('textoInput');
+  const btnPlay = document.getElementById('btnPlayAudio');
   const speedSelect = document.getElementById('speedSelect');
-  const palabraInput = document.getElementById('palabraInput');
-  const btnEnviar = document.getElementById('btnEnviar');
+  const audioPlayer = document.getElementById('audioPlayer');
+  const tiempoActual = document.getElementById('tiempoActual');
+  const tiempoTotal = document.getElementById('tiempoTotal');
+  const btnAnalizar = document.getElementById('btnAnalizar');
+
   const resultadosDiv = document.getElementById('resultados');
-  const palabraEsperadaDisplay = document.getElementById('palabraEsperadaDisplay');
-  const palabraIngresadaDisplay = document.getElementById('palabraIngresadaDisplay');
+  const textoOriginalDisplay = document.getElementById('textoOriginalDisplay');
   const scoreDisplay = document.getElementById('scoreDisplay');
   const nivelDisplay = document.getElementById('nivelDisplay');
   const erroresList = document.getElementById('erroresList');
 
-  // Palabra esperada (hardcodeada para demo; en producción vendría del audio)
-  const palabraEsperada = 'biblioteca';
+  let textoReferenciaActual = '';
 
-  // --- Síntesis de voz (Web Speech API) ---
-  function reproducirAudio(texto, velocidad = 1.0) {
-    if (!window.speechSynthesis) {
-      alert('Tu navegador no soporta síntesis de voz.');
-      return;
-    }
-    const utterance = new SpeechSynthesisUtterance(texto);
-    utterance.lang = 'es-ES';
-    utterance.rate = parseFloat(velocidad);
-    utterance.pitch = 1;
-    utterance.volume = 1;
-    window.speechSynthesis.cancel(); // detener cualquier reproducción anterior
-    window.speechSynthesis.speak(utterance);
+  // ====== Cargar ejemplo al seleccionar ======
+  function cargarEjemplo(id) {
+    const ej = EJEMPLOS[id];
+    if (!ej) return;
+    textoReferenciaActual = ej.texto;
+    textoInput.value = ej.texto;
+    audioPlayer.src = ej.audio;
+    audioPlayer.load();
+    // Ocultar resultados anteriores
+    resultadosDiv.classList.add('hidden');
+    // Resetear tiempos del reproductor
+    tiempoActual.textContent = '0:00';
+    tiempoTotal.textContent = '0:00';
+    btnPlay.textContent = '▶ Reproducir';
   }
 
-  audioBtn.addEventListener('click', () => {
-    const velocidad = speedSelect.value;
-    reproducirAudio(palabraEsperada, velocidad);
+  ejemploSelect.addEventListener('change', (e) => {
+    const id = parseInt(e.target.value);
+    cargarEjemplo(id);
   });
 
-  // --- Envío al servidor ---
-  btnEnviar.addEventListener('click', async () => {
-    const palabraIngresada = palabraInput.value.trim();
-    if (!palabraIngresada) {
-      alert('Por favor, escribe la palabra que escuchaste.');
+  // Cargar el primer ejemplo por defecto
+  cargarEjemplo(1);
+
+  // ====== Reproductor de audio ======
+  function formatTime(seconds) {
+    if (isNaN(seconds)) return '0:00';
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  }
+
+  audioPlayer.addEventListener('loadedmetadata', () => {
+    tiempoTotal.textContent = formatTime(audioPlayer.duration);
+  });
+
+  audioPlayer.addEventListener('timeupdate', () => {
+    tiempoActual.textContent = formatTime(audioPlayer.currentTime);
+  });
+
+  btnPlay.addEventListener('click', () => {
+    if (audioPlayer.paused) {
+      audioPlayer.play();
+      btnPlay.textContent = '⏸ Pausa';
+    } else {
+      audioPlayer.pause();
+      btnPlay.textContent = '▶ Reproducir';
+    }
+  });
+
+  audioPlayer.addEventListener('ended', () => {
+    btnPlay.textContent = '▶ Reproducir';
+    tiempoActual.textContent = formatTime(0);
+  });
+
+  speedSelect.addEventListener('change', () => {
+    audioPlayer.playbackRate = parseFloat(speedSelect.value);
+  });
+
+  // ====== Análisis real con el backend C++ ======
+  btnAnalizar.addEventListener('click', async () => {
+    const textoUsuario = textoInput.value.trim();
+    if (!textoUsuario) {
+      alert('Por favor, escribe o selecciona un texto para analizar.');
+      return;
+    }
+    if (!textoReferenciaActual) {
+      alert('No hay texto de referencia. Selecciona un ejemplo primero.');
       return;
     }
 
-    // Deshabilitar botón durante la carga
-    btnEnviar.disabled = true;
-    btnEnviar.textContent = 'Analizando...';
+    btnAnalizar.disabled = true;
+    btnAnalizar.textContent = 'Analizando...';
 
     try {
       const response = await fetch('/api/analizar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          palabraEsperada,
-          palabraIngresada
+          textoReferencia: textoReferenciaActual,
+          textoUsuario: textoUsuario
         })
       });
 
@@ -61,68 +122,97 @@ document.addEventListener('DOMContentLoaded', () => {
         throw new Error(errorData.error || 'Error en el servidor');
       }
 
-      const data = await response.json();
-      mostrarResultados(data);
+      const resultado = await response.json();
+      mostrarResultados(resultado);
     } catch (error) {
       alert('Error al analizar: ' + error.message);
       console.error(error);
     } finally {
-      btnEnviar.disabled = false;
-      btnEnviar.textContent = 'Analizar';
+      btnAnalizar.disabled = false;
+      btnAnalizar.textContent = '🔍 Analizar Texto';
     }
   });
 
-  // --- Renderizado de resultados ---
-  function mostrarResultados(data) {
-    // Mostrar sección
+  // ====== Renderizado de resultados ======
+  function mostrarResultados(resultado) {
     resultadosDiv.classList.remove('hidden');
 
-    // Palabras
-    palabraEsperadaDisplay.innerHTML = `<strong>🔵 Esperada:</strong> ${data.palabraEsperada}`;
-    palabraIngresadaDisplay.innerHTML = `<strong>🟢 Ingresada:</strong> ${data.palabraIngresada}`;
+    // --- Texto con resaltado de caracteres ---
+    const ref = resultado.palabraEsperada;
+    const errores = resultado.errores || [];
+    // Crear un mapa de posiciones con errores
+    const errorMap = new Map();
+    errores.forEach(err => {
+      errorMap.set(err.posicion, err);
+    });
 
-    // Score y nivel
-    const score = (data.scoreGlobal * 100).toFixed(0);
+    let html = '';
+    for (let i = 0; i < ref.length; i++) {
+      const ch = ref[i];
+      if (errorMap.has(i)) {
+        const err = errorMap.get(i);
+        const tipo = err.tipoError || 'OTRO';
+        const desc = err.descripcion || '';
+        const letraEsp = err.letraEsperada || ch;
+        const letraIng = err.letraIngresada || '∅';
+        html += `<span class="error-highlight ${tipo}" title="${desc} (esperado: ${letraEsp}, ingresado: ${letraIng})">${ch}</span>`;
+      } else {
+        html += ch;
+      }
+    }
+    textoOriginalDisplay.innerHTML = html;
+
+    // --- Score y nivel ---
+    const score = (resultado.scoreGlobal * 100).toFixed(0);
     scoreDisplay.textContent = `Puntuación: ${score}% de acierto`;
-    nivelDisplay.textContent = `Nivel de riesgo: ${data.nivelRiesgo}`;
-    nivelDisplay.className = `nivel ${data.nivelRiesgo}`;
+    nivelDisplay.textContent = `Nivel de riesgo: ${resultado.nivelRiesgo}`;
+    nivelDisplay.className = `nivel ${resultado.nivelRiesgo}`;
 
-    // Errores
+    // --- Lista detallada de errores ---
     erroresList.innerHTML = '';
-    if (data.errores && data.errores.length > 0) {
+    if (errores.length > 0) {
       const titulo = document.createElement('p');
       titulo.textContent = 'Diferencias detectadas:';
       erroresList.appendChild(titulo);
 
-      data.errores.forEach((err) => {
+      errores.forEach((err) => {
         const item = document.createElement('div');
         item.className = 'error-item';
 
-        const letraSpan = document.createElement('span');
-        letraSpan.className = `letra ${err.tipoError}`;
-        letraSpan.textContent = err.letraIngresada || '∅';
-        item.appendChild(letraSpan);
+        const posSpan = document.createElement('span');
+        posSpan.textContent = `Pos ${err.posicion}:`;
+        item.appendChild(posSpan);
 
-        const infoSpan = document.createElement('span');
-        infoSpan.textContent = `Esperaba "${err.letraEsperada}" en posición ${err.posicion}`;
-        item.appendChild(infoSpan);
+        const espSpan = document.createElement('span');
+        espSpan.textContent = `"${err.letraEsperada}" →`;
+        item.appendChild(espSpan);
+
+        const usrSpan = document.createElement('span');
+        usrSpan.textContent = `"${err.letraIngresada || '∅'}"`;
+        item.appendChild(usrSpan);
 
         const tipoSpan = document.createElement('span');
         tipoSpan.className = 'tipo';
         tipoSpan.textContent = err.tipoError.replace('_', ' ');
         item.appendChild(tipoSpan);
 
-        // Botón de audio (fonema correcto)
-        const audioBtnItem = document.createElement('button');
-        audioBtnItem.className = 'audio-btn';
-        audioBtnItem.textContent = '🔊';
-        audioBtnItem.title = 'Escuchar fonema correcto';
-        audioBtnItem.addEventListener('click', () => {
-          // Usar la letra esperada como fonema
-          const fonema = err.letraEsperada;
-          reproducirAudio(fonema, 1.0);
+        const descSpan = document.createElement('span');
+        descSpan.textContent = err.descripcion || '';
+        item.appendChild(descSpan);
+
+        // Botón de audio (reproduce la letra esperada con síntesis de voz)
+        const audioBtn = document.createElement('button');
+        audioBtn.className = 'audio-btn';
+        audioBtn.textContent = '🔊';
+        audioBtn.title = 'Escuchar fonema';
+        audioBtn.addEventListener('click', () => {
+          const utterance = new SpeechSynthesisUtterance(err.letraEsperada);
+          utterance.lang = 'es-ES';
+          utterance.rate = 1.0;
+          window.speechSynthesis.cancel();
+          window.speechSynthesis.speak(utterance);
         });
-        item.appendChild(audioBtnItem);
+        item.appendChild(audioBtn);
 
         erroresList.appendChild(item);
       });
@@ -135,13 +225,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Enter para enviar
-  palabraInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-      btnEnviar.click();
+  // ====== Tecla Enter+Ctrl en el textarea ======
+  textoInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && e.ctrlKey) {
+      btnAnalizar.click();
     }
   });
-
-  // Cargar palabra esperada (para demostración)
-  palabraInput.placeholder = `Escribe "${palabraEsperada}"`;
 });

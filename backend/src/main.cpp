@@ -1,172 +1,196 @@
 // main.cpp
 
 #include <iostream>
-#include <iomanip>
-#include <fstream>   
-#include <sstream>
-
 #include <string>
 #include <vector>
-#include <nlohmann/json.hpp>
+#include <map>
+#include <unordered_set>
+#include <fstream>
+#include <sstream>
+#include <codecvt>
+#include <locale>
+#include <algorithm>
 #include <chrono>
 
-#include "analizador_lexico.h"
-#include "analizador_sintactico.h"
-#include "analizador_semantico.h"
-
+#include <nlohmann/json.hpp>
 
 using json = nlohmann::json;
 using namespace std;
 
-// ─────────────────────────────────────────────
-// Colores ANSI
-// ─────────────────────────────────────────────
-#define RESET   "\033[0m"
-#define BOLD    "\033[1m"
-#define RED     "\033[31m"
-#define GREEN   "\033[32m"
-#define YELLOW  "\033[33m"
-#define CYAN    "\033[36m"
+// ────────────────────────────────────────────────────────────────
+//  Carga de archivos JSON de reglas
+// ────────────────────────────────────────────────────────────────
 
-void imprimirSeparador(const string& titulo) {
-    cout << "\n";
-    cout << CYAN << BOLD;
-    cout << "========================================\n";
-    cout << " " << titulo << "\n";
-    cout << "========================================\n";
-    cout << RESET;
-}
-
-void mostrarTokens(BufferTokens buffer) {
-    cout << GREEN << "TOKENS GENERADOS:\n\n" << RESET;
-
-    while (buffer.hayMas()) {
-
-        Token t = buffer.siguiente();
-
-        // ignorar espacios visualmente
-        if (t.tipo == TipoToken::ESPACIO ||
-            t.tipo == TipoToken::SALTO_LINEA)
-            continue;
-
-        cout << left << setw(28)
-             << ("[" + nombreTipo(t.tipo) + "]");
-
-        cout << " original=\""
-             << t.valorOriginal << "\"";
-
-        cout << " normal=\""
-             << t.valorNormal << "\"";
-
-        cout << " (L"
-             << t.linea
-             << ":C"
-             << t.columna
-             << ")";
-
-        if (t.inicioOracion)
-            cout << "  [INICIO_ORACION]";
-
-        if (t.inicioLinea)
-            cout << "  [INICIO_LINEA]";
-
-        if (t.inicioParrafo)
-            cout << "  [INICIO_PARRAFO]";
-
-        cout << "\n";
-    }
-}
-
-void mostrarErroresLexicos(const AnalizadorLexico& lexer) {
-
-    if (!lexer.tieneErrores())
-        return;
-
-    cout << RED << BOLD;
-    cout << "\nERRORES LEXICOS:\n";
-    cout << RESET;
-
-    for (const auto& e : lexer.obtenerErrores()) {
-
-        cout << RED
-             << "  [Linea "
-             << e.linea
-             << ", Col "
-             << e.columna
-             << "] "
-             << e.descripcion
-             << RESET
-             << "\n";
-    }
-}
-
-void mostrarErroresSintacticos(const AnalizadorSintactico& parser) {
-
-    if (!parser.tieneErrores())
-        return;
-
-    cout << RED << BOLD;
-    cout << "\nERRORES SINTACTICOS:\n";
-    cout << RESET;
-
-    for (const auto& e : parser.obtenerErrores()) {
-
-        cout << RED
-             << "  [Linea "
-             << e.linea
-             << ", Col "
-             << e.columna
-             << "] "
-             << e.descripcion
-             << RESET
-             << "\n";
-    }
-}
-
-static string leerArchivoJson(const string& ruta) {
+static string leerArchivo(const string& ruta) {
     ifstream f(ruta);
-    if (!f.is_open())
-        throw runtime_error("No se pudo abrir el archivo JSON: " + ruta);
+    if (!f.is_open()) throw runtime_error("No se pudo abrir: " + ruta);
     ostringstream ss;
     ss << f.rdbuf();
     return ss.str();
 }
 
+// Estructura para pares visuales (cargados desde pares_visuales.json)
+struct ParVisual {
+    vector<wchar_t> grafemas;
+    string severidad;
+};
 
+// Estructura para homófonos (cargados desde homofonos.json)
+struct GrupoHomofono {
+    string tipo;
+    vector<vector<wstring>> pares;
+};
 
-// -------------------------------------------------------------------
-// 1. Algoritmo de alineamiento con transposiciones (Levenshtein-Damerau)
-//    Retorna la secuencia de operaciones para transformar esperada -> ingresada
-// -------------------------------------------------------------------
+// ────────────────────────────────────────────────────────────────
+//  Clase que carga y almacena las reglas
+// ────────────────────────────────────────────────────────────────
+
+class ReglasDislexia {
+public:
+    static ReglasDislexia& instancia() {
+        static ReglasDislexia inst;
+        return inst;
+    }
+
+    // Verifica si dos caracteres forman un par de confusión visual de alta severidad
+    bool esParVisualAlto(wchar_t a, wchar_t b) const {
+        for (const auto& p : paresVisuales) {
+            if (p.severidad != "alta") continue;
+            if (p.grafemas.size() != 2) continue;
+            if ((p.grafemas[0] == a && p.grafemas[1] == b) ||
+                (p.grafemas[0] == b && p.grafemas[1] == a))
+                return true;
+        }
+        return false;
+    }
+
+    // Devuelve el tipo de homófono si los caracteres forman un par homófono
+    string tipoHomofono(wchar_t a, wchar_t b) const {
+        // Convertimos a wstring de un solo carácter para buscar en la tabla
+        wstring sa(1, a), sb(1, b);
+        // Los pares de homófonos están almacenados como listas de palabras, pero aquí
+        // solo necesitamos comparar a nivel de carácter. Para simplificar, usamos un mapa
+        // de pares de caracteres conocido.
+        // Creamos un mapa manual de pares típicos.
+        static const unordered_map<wstring, string> mapa = {
+            {L"bv", "b_v"}, {L"vb", "b_v"},
+            {L"ll", "ll_y"}, {L"yl", "ll_y"}, {L"ly", "ll_y"}, {L"yy", "ll_y"},
+            {L"sc", "s_c_z"}, {L"cs", "s_c_z"}, {L"sz", "s_c_z"}, {L"zs", "s_c_z"},
+            {L"cz", "s_c_z"}, {L"zc", "s_c_z"},
+            {L"gj", "g_j"}, {L"jg", "g_j"},
+            // h muda: comparar con 'h' o sin ella
+            {L"h", "h_muda"}, // cuando uno es h y el otro no
+        };
+        wstring clave = sa + sb;
+        auto it = mapa.find(clave);
+        if (it != mapa.end()) return it->second;
+        // Si uno es 'h' y el otro no, es h_muda
+        if (a == L'h' || b == L'h') return "h_muda";
+        return "";
+    }
+
+private:
+    vector<ParVisual> paresVisuales;
+    vector<GrupoHomofono> gruposHomofonos;
+
+    ReglasDislexia() {
+        cargarParesVisuales();
+        cargarHomofonos();
+    }
+
+    void cargarParesVisuales() {
+        try {
+            string contenido = leerArchivo("../data/pares_visuales.json");
+            json j = json::parse(contenido);
+            for (const auto& item : j["pares"]) {
+                ParVisual p;
+                p.severidad = item["severidad"].get<string>();
+                for (const auto& g : item["grafemas"]) {
+                    string utf8 = g.get<string>();
+                    // Convertir a wchar_t (asumimos que el JSON contiene un solo carácter)
+                    if (utf8.size() == 1) {
+                        p.grafemas.push_back((wchar_t)utf8[0]);
+                    } else {
+                        // Para caracteres multibyte, usamos conversión simple (solo para demo)
+                        // En producción usaríamos una librería como utfcpp.
+                        // Asumimos que los caracteres son ASCII o están en el rango BMP.
+                        // Convertimos manualmente usando wstring_convert.
+                        wstring_convert<codecvt_utf8<wchar_t>> conv;
+                        wstring w = conv.from_bytes(utf8);
+                        if (!w.empty()) p.grafemas.push_back(w[0]);
+                    }
+                }
+                paresVisuales.push_back(p);
+            }
+        } catch (...) {
+            // Si falla la carga, continuamos con reglas por defecto (pares comunes)
+            cerr << "Advertencia: No se pudo cargar pares_visuales.json. Usando reglas por defecto.\n";
+            // Añadir pares básicos manualmente
+            paresVisuales.push_back({{L'b', L'd'}, "alta"});
+            paresVisuales.push_back({{L'p', L'q'}, "alta"});
+            paresVisuales.push_back({{L'd', L'p'}, "alta"});
+            paresVisuales.push_back({{L'b', L'q'}, "alta"});
+            paresVisuales.push_back({{L'u', L'n'}, "alta"});
+            paresVisuales.push_back({{L'm', L'w'}, "alta"});
+        }
+    }
+
+    void cargarHomofonos() {
+        try {
+            string contenido = leerArchivo("../data/homofonos.json");
+            json j = json::parse(contenido);
+            for (const auto& grupo : j["grupos"]) {
+                GrupoHomofono gh;
+                gh.tipo = grupo["tipo"].get<string>();
+                for (const auto& par : grupo["pares"]) {
+                    vector<wstring> parWords;
+                    for (const auto& palabra : par) {
+                        string utf8 = palabra.get<string>();
+                        wstring_convert<codecvt_utf8<wchar_t>> conv;
+                        parWords.push_back(conv.from_bytes(utf8));
+                    }
+                    gh.pares.push_back(parWords);
+                }
+                gruposHomofonos.push_back(gh);
+            }
+        } catch (...) {
+            cerr << "Advertencia: No se pudo cargar homofonos.json. Usando reglas por defecto.\n";
+            // Añadir pares básicos manualmente
+        }
+    }
+};
+
+// ────────────────────────────────────────────────────────────────
+//  Algoritmo de alineamiento Damerau‑Levenshtein sobre wstring
+// ────────────────────────────────────────────────────────────────
+
 enum OpType { MATCH, SUBSTITUTE, INSERT, DELETE, TRANSPOSE };
 
 struct EditOp {
     OpType type;
-    int pos;           // índice en la palabra esperada (para MATCH/SUBSTITUTE/DELETE)
-    int pos2;          // índice en la palabra ingresada (para INSERT/TRANSPOSE)
-    char from;         // carácter en esperada
-    char to;           // carácter en ingresada (si aplica)
+    int posEsp;        // índice en referencia (para MATCH/SUBSTITUTE/DELETE)
+    int posUsr;        // índice en usuario (para MATCH/SUBSTITUTE/INSERT)
+    wchar_t charEsp;   // carácter en referencia
+    wchar_t charUsr;   // carácter en usuario (si aplica)
 };
 
-// Función de alineamiento (Damerau-Levenshtein con costos unitarios)
-vector<EditOp> alignWords(const string& a, const string& b) {
-    int n = a.size(), m = b.size();
+vector<EditOp> alignWords(const wstring& ref, const wstring& usr) {
+    int n = ref.size(), m = usr.size();
     vector<vector<int>> dp(n+1, vector<int>(m+1, 0));
     vector<vector<EditOp>> ops(n+1, vector<EditOp>(m+1));
 
-    // Inicialización
     for (int i = 0; i <= n; ++i) {
         dp[i][0] = i;
-        ops[i][0] = {DELETE, i-1, -1, a[i-1], '\0'};
+        ops[i][0] = {DELETE, i-1, -1, ref[i-1], L'\0'};
     }
     for (int j = 0; j <= m; ++j) {
         dp[0][j] = j;
-        ops[0][j] = {INSERT, -1, j-1, '\0', b[j-1]};
+        ops[0][j] = {INSERT, -1, j-1, L'\0', usr[j-1]};
     }
 
     for (int i = 1; i <= n; ++i) {
         for (int j = 1; j <= m; ++j) {
-            int cost = (a[i-1] == b[j-1]) ? 0 : 1;
+            int cost = (ref[i-1] == usr[j-1]) ? 0 : 1;
             int del = dp[i-1][j] + 1;
             int ins = dp[i][j-1] + 1;
             int sub = dp[i-1][j-1] + cost;
@@ -174,21 +198,21 @@ vector<EditOp> alignWords(const string& a, const string& b) {
             EditOp op;
 
             if (best == sub && cost == 0) {
-                op = {MATCH, i-1, j-1, a[i-1], b[j-1]};
+                op = {MATCH, i-1, j-1, ref[i-1], usr[j-1]};
             } else if (best == sub) {
-                op = {SUBSTITUTE, i-1, j-1, a[i-1], b[j-1]};
+                op = {SUBSTITUTE, i-1, j-1, ref[i-1], usr[j-1]};
             } else if (best == del) {
-                op = {DELETE, i-1, -1, a[i-1], '\0'};
+                op = {DELETE, i-1, -1, ref[i-1], L'\0'};
             } else { // ins
-                op = {INSERT, -1, j-1, '\0', b[j-1]};
+                op = {INSERT, -1, j-1, L'\0', usr[j-1]};
             }
 
-            // Transposición (Damerau): verificar si i>1 y j>1 y a[i-1]==b[j-2] y a[i-2]==b[j-1]
-            if (i > 1 && j > 1 && a[i-1] == b[j-2] && a[i-2] == b[j-1]) {
+            // Transposición (Damerau)
+            if (i > 1 && j > 1 && ref[i-1] == usr[j-2] && ref[i-2] == usr[j-1]) {
                 int transp = dp[i-2][j-2] + 1;
                 if (transp < best) {
                     best = transp;
-                    op = {TRANSPOSE, i-2, j-2, a[i-2], b[j-2]}; // posición del primer carácter intercambiado
+                    op = {TRANSPOSE, i-2, j-2, ref[i-2], usr[j-2]};
                 }
             }
             dp[i][j] = best;
@@ -196,7 +220,6 @@ vector<EditOp> alignWords(const string& a, const string& b) {
         }
     }
 
-    // Reconstruir secuencia de operaciones (recorrido inverso)
     vector<EditOp> result;
     int i = n, j = m;
     while (i > 0 || j > 0) {
@@ -211,327 +234,128 @@ vector<EditOp> alignWords(const string& a, const string& b) {
     return result;
 }
 
+// ────────────────────────────────────────────────────────────────
+//  Clasificación de errores usando las reglas cargadas
+// ────────────────────────────────────────────────────────────────
 
-// -------------------------------------------------------------------
-// 2. Clasificación de errores utilizando las tablas del analizador
-// -------------------------------------------------------------------
+string clasificarError(const EditOp& op) {
+    if (op.type == MATCH) return "MATCH";
+    if (op.type == DELETE) return "OMISION";
+    if (op.type == INSERT) return "INSERCION";  // aunque el usuario añadió, lo tratamos como omisión en referencia
 
-// Función que carga los JSON una sola vez (singleton)
-class RecursosDislexia {
-public:
-    unordered_set<char> grafemasAlta;
-    unordered_set<char> grafemasAltaBDPQ;
-    unordered_map<string,string> homofonos; // palabra -> tipo
-    // ... otras tablas si se necesitan
+    if (op.type == TRANSPOSE) return "INVERSION";
 
-    static RecursosDislexia& instance() {
-        static RecursosDislexia inst;
-        return inst;
-    }
+    // Sustitución
+    wchar_t a = op.charEsp, b = op.charUsr;
+    auto& reglas = ReglasDislexia::instancia();
 
-private:
-    RecursosDislexia() {
-        // Cargar pares_visuales.json para obtener grafemas de alta severidad
-        // (simplificado: aquí usamos un subset fijo para demostración)
-        // En producción, usar el analizador_semantico para cargar todos los JSON.
-        grafemasAlta = {'b','d','p','q','u','n','m','w'};
-        grafemasAltaBDPQ = {'b','d','p','q'};
-        // homofonos básicos (b/v, ll/y, s/c/z, g/j, h muda)
-        homofonos["baca"] = "b_v"; homofonos["vaca"] = "b_v";
-        homofonos["bale"] = "b_v"; homofonos["vale"] = "b_v";
-        homofonos["barón"] = "b_v"; homofonos["varón"] = "b_v";
-        homofonos["basta"] = "b_v"; homofonos["vasta"] = "b_v";
-        homofonos["bate"] = "b_v"; homofonos["vate"] = "b_v";
-        homofonos["bello"] = "b_v"; homofonos["vello"] = "b_v";
-        homofonos["beta"] = "b_v"; homofonos["veta"] = "b_v";
-        homofonos["casa"] = "s_c_z"; homofonos["caza"] = "s_c_z";
-        homofonos["maza"] = "s_c_z"; homofonos["masa"] = "s_c_z";
-        homofonos["cazo"] = "s_c_z"; homofonos["caso"] = "s_c_z";
-        homofonos["cien"] = "s_c_z"; homofonos["sien"] = "s_c_z";
-        homofonos["cocer"] = "s_c_z"; homofonos["coser"] = "s_c_z";
-        homofonos["ceda"] = "s_c_z"; homofonos["seda"] = "s_c_z";
-        homofonos["cima"] = "s_c_z"; homofonos["sima"] = "s_c_z";
-        homofonos["gira"] = "g_j"; homofonos["jira"] = "g_j";
-        homofonos["gerente"] = "g_j"; homofonos["jerente"] = "g_j";
-        homofonos["gesto"] = "g_j"; homofonos["jesto"] = "g_j";
-        // ll/y
-        homofonos["callado"] = "ll_y"; homofonos["cayado"] = "ll_y";
-        homofonos["halla"] = "ll_y"; homofonos["haya"] = "ll_y";
-        homofonos["malla"] = "ll_y"; homofonos["maya"] = "ll_y";
-        homofonos["pollo"] = "ll_y"; homofonos["poyo"] = "ll_y";
-        homofonos["pulla"] = "ll_y"; homofonos["puya"] = "ll_y";
-        // h muda
-        homofonos["a"] = "h_muda"; homofonos["ha"] = "h_muda";
-        homofonos["asta"] = "h_muda"; homofonos["hasta"] = "h_muda";
-        homofonos["aya"] = "h_muda"; homofonos["haya"] = "h_muda";
-        homofonos["echo"] = "h_muda"; homofonos["hecho"] = "h_muda";
-        homofonos["ojear"] = "h_muda"; homofonos["hojear"] = "h_muda";
-        homofonos["ola"] = "h_muda"; homofonos["hola"] = "h_muda";
-        homofonos["ora"] = "h_muda"; homofonos["hora"] = "h_muda";
-        // ... se pueden completar con los datos reales
-    }
-};
+    // 1. Rotación visual (b/d, p/q, etc.)
+    if (reglas.esParVisualAlto(a, b)) return "ROTACION_VISUAL";
 
-string clasificarTipoError(char esperada, char ingresada, const string& palabraEsperada, const string& palabraIngresada) {
-    // Si es omisión o inserción
-    if (ingresada == '\0') return "OMISION";
-    if (esperada == '\0') return "OMISION"; // o "INSERCION"
+    // 2. Homófono (b/v, ll/y, s/c/z, etc.)
+    string tipoH = reglas.tipoHomofono(a, b);
+    if (!tipoH.empty()) return "SUSTITUCION_FONETICA";
 
-    // Verificar pares visuales (b/d, p/q, u/n, m/w, etc.)
-    auto& vis = RecursosDislexia::instance().grafemasAlta;
-    if (vis.count(esperada) && vis.count(ingresada)) {
-        // Si ambos son b/d/p/q
-        auto& bdpq = RecursosDislexia::instance().grafemasAltaBDPQ;
-        if (bdpq.count(esperada) && bdpq.count(ingresada)) {
-            return "ROTACION_VISUAL";
-        }
-        return "ROTACION_VISUAL"; // otros pares de alta confusión
-    }
+    // 3. Contexto dependiente (c->s, g->j) – lo incluimos en homófonos
 
-    // Verificar homófonos (usando la tabla de homofonos)
-    // Para simplificar, comparamos pares de letras típicos
-    string par = string(1, esperada) + ingresada;
-    if (par == "bv" || par == "vb") return "SUSTITUCION_FONETICA";
-    if (par == "ll" || par == "yl" || par == "ly" || par == "yy") return "SUSTITUCION_FONETICA";
-    if (par == "sc" || par == "cs" || par == "sz" || par == "zs" || par == "cz" || par == "zc") return "SUSTITUCION_FONETICA";
-    if (par == "gj" || par == "jg") return "SUSTITUCION_FONETICA";
-    if (esperada == 'h' || ingresada == 'h') return "SUSTITUCION_FONETICA"; // h muda
-
-    // Si no entra en lo anterior, pero son diferentes
+    // 4. Otros
     return "OTRO";
 }
 
+// ────────────────────────────────────────────────────────────────
+//  Generación del IR en JSON
+// ────────────────────────────────────────────────────────────────
 
-// -------------------------------------------------------------------
-// 3. Generación del IR JSON
-// -------------------------------------------------------------------
-json generarIR(const string& esperada, const string& ingresada, double tiempo) {
-    vector<EditOp> ops = alignWords(esperada, ingresada);
+json generarIR(const wstring& ref, const wstring& usr, double tiempo) {
 
+    // Convertidor UTF-8 para las palabras completas
+    wstring_convert<codecvt_utf8<wchar_t>> conv;
+
+
+    vector<EditOp> ops = alignWords(ref, usr);
     json errores = json::array();
-    int posEsperada = 0, posIngresada = 0;
     int totalErrores = 0;
-    double pesoTotal = 0.0;
 
     for (const auto& op : ops) {
-        int pos = op.pos; // posición en esperada (para MATCH/SUBSTITUTE/DELETE)
-        if (op.type == MATCH) {
-            posEsperada++;
-            posIngresada++;
-            continue;
-        }
-
+        if (op.type == MATCH) continue;
         totalErrores++;
+
         json error;
-        error["posicion"] = pos;
-        error["letraEsperada"] = string(1, op.from);
-        string tipo;
+        error["posicion"] = op.posEsp >= 0 ? op.posEsp : (op.posUsr >= 0 ? op.posUsr : 0);
 
-        if (op.type == SUBSTITUTE) {
-            error["letraIngresada"] = string(1, op.to);
-            tipo = clasificarTipoError(op.from, op.to, esperada, ingresada);
-            posEsperada++; posIngresada++;
-        } else if (op.type == DELETE) {
-            error["letraIngresada"] = nullptr;
-            tipo = "OMISION";
-            posEsperada++;
-        } else if (op.type == INSERT) {
-            error["letraIngresada"] = string(1, op.to);
-            tipo = "OMISION"; // lo tratamos como omisión de la esperada (no hay letra esperada)
-            error["letraEsperada"] = nullptr; // pero mejor poner como null
-            // ajustamos posición: usamos la posición anterior
-            // Mejor lo omitimos de la lista, ya que el usuario añadió una letra extra
-            continue; // no lo reportamos como error de la palabra esperada
-        } else if (op.type == TRANSPOSE) {
-            error["letraIngresada"] = string(1, op.to);
-            tipo = "INVERSION";
-            posEsperada += 2;
-            posIngresada += 2;
-        }
+        // Convertir caracteres wchar_t a UTF-8 para el JSON
+        //wstring_convert<codecvt_utf8<wchar_t>> conv;
+        string charEsp = (op.charEsp != L'\0') ? conv.to_bytes(op.charEsp) : "";
+        string charUsr = (op.charUsr != L'\0') ? conv.to_bytes(op.charUsr) : "";
 
+        error["letraEsperada"] = charEsp;
+        error["letraIngresada"] = charUsr;
+
+        string tipo = clasificarError(op);
         error["tipoError"] = tipo;
-        // Audio corrección: ruta al fonema de la letra esperada
-        if (op.type != INSERT && op.from != '\0') {
-            error["audioCorreccion"] = "/assets/audio/fonemas/" + string(1, op.from) + ".mp3";
-        } else {
-            error["audioCorreccion"] = "/assets/audio/fonemas/generico.mp3";
-        }
-        // Descripción
-        error["descripcion"] = "Error de tipo " + tipo + " en la posición " + to_string(pos);
-        errores.push_back(error);
+        error["descripcion"] = "Error de tipo " + tipo + " en posición " + to_string(error["posicion"].get<int>());
 
-        // Acumular peso (usar pesos del modelo)
-        // Por simplicidad, asignamos peso 1.0 por cada error, pero se puede mejorar
-        pesoTotal += 1.0;
+        errores.push_back(error);
     }
 
-    // Score global: entre 0 y 1, donde 1 = sin errores
-    double maxPosible = max(esperada.size(), ingresada.size());
-    double score = 1.0 - (totalErrores / maxPosible);
+    double maxLen = max(ref.size(), usr.size());
+    double score = 1.0 - (totalErrores / (double)maxLen);
     if (score < 0) score = 0;
     if (score > 1) score = 1;
 
-    // Nivel de riesgo (umbrales simplificados)
     string nivel;
     if (score >= 0.9) nivel = "BAJO";
     else if (score >= 0.7) nivel = "MEDIO";
     else nivel = "ALTO";
 
+    
     json result;
-    result["palabraEsperada"] = esperada;
-    result["palabraIngresada"] = ingresada;
+    result["palabraEsperada"] = conv.to_bytes(ref);
+    result["palabraIngresada"] = conv.to_bytes(usr);
     result["scoreGlobal"] = score;
     result["nivelRiesgo"] = nivel;
     result["errores"] = errores;
-    result["palabrasAnalizadas"] = 1;
     result["tiempoProcesamiento"] = tiempo;
 
     return result;
 }
 
+// ────────────────────────────────────────────────────────────────
+//  main: lee dos líneas de stdin y emite JSON
+// ────────────────────────────────────────────────────────────────
 
 int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
     auto start = chrono::high_resolution_clock::now();
 
-    string esperada, ingresada;
-    if (!getline(cin, esperada)) {
-        cerr << "Error: no se pudo leer la palabra esperada" << endl;
+    string refUtf8, usrUtf8;
+    if (!getline(cin, refUtf8)) {
+        cerr << "Error: No se pudo leer el texto de referencia\n";
         return 1;
     }
-    if (!getline(cin, ingresada)) {
-        cerr << "Error: no se pudo leer la palabra ingresada" << endl;
+    if (!getline(cin, usrUtf8)) {
+        cerr << "Error: No se pudo leer el texto del usuario\n";
         return 1;
     }
 
-    // Normalizar (minúsculas y quitar tildes) – usar la función existente del lexer
-    // (opcional, pero podemos usar una función propia)
-    // Por ahora, trabajamos con las cadenas tal cual.
+    // Convertir a wstring (UTF-8 -> UTF-32)
+    wstring_convert<codecvt_utf8<wchar_t>> conv;
+    wstring ref, usr;
+    try {
+        ref = conv.from_bytes(refUtf8);
+        usr = conv.from_bytes(usrUtf8);
+    } catch (...) {
+        cerr << "Error de conversión UTF-8\n";
+        return 1;
+    }
 
     auto end = chrono::high_resolution_clock::now();
     double tiempo = chrono::duration<double>(end - start).count();
 
-    json ir = generarIR(esperada, ingresada, tiempo);
+    json ir = generarIR(ref, usr, tiempo);
     cout << ir.dump(2) << endl;
 
     return 0;
 }
-
-/*
-
-int main(int argc, char* argv[]) {
-    auto start = chrono::high_resolution_clock::now();
-    
-    string esperada, ingresada;
-    if (!getline(cin, esperada)) {
-        cerr << "Error: no se pudo leer la palabra esperada" << endl;
-        return 1;
-    }
-    if (!getline(cin, ingresada)) {
-        cerr << "Error: no se pudo leer la palabra ingresada" << endl;
-        return 1;
-    }
-
-    try {
-
-
-        AnalizadorLexico lexer(rutaEntrada);
-
-        BufferTokens bufferTokens = lexer.tokenizar();
-
-        mostrarTokens(bufferTokens);
-
-        mostrarErroresLexicos(lexer);
-
-        lexer.resetear();
-
-        // IMPORTANTE:
-        // El buffer ya fue consumido al imprimir tokens,
-        // por eso necesitamos volver a tokenizar.
-        BufferTokens bufferParser = lexer.tokenizar();
-
-        // ─────────────────────────────────────
-        // ANALISIS SINTACTICO
-        // ─────────────────────────────────────
-        imprimirSeparador("ANALISIS SINTACTICO");
-
-        AnalizadorSintactico parser(move(bufferParser));
-
-        NodoSintactico ast = parser.analizar();
-
-        parser.imprimirArbol(ast);
-
-        mostrarErroresSintacticos(parser);
-
-        // ─────────────────────────────────────
-        // ANALISIS SEMANTICO
-        // ─────────────────────────────────────
-        imprimirSeparador("FASE 3 - ANALISIS SEMANTICO DISLEXICO");
- 
-        string jsonPonderacion    = leerArchivoJson(dirData + "modelo_ponderacion.json");
-        string jsonReglas         = leerArchivoJson(dirData + "reglas_deteccion.json");
-        string jsonPares          = leerArchivoJson(dirData + "pares_visuales.json");
-        string jsonSilabicos      = leerArchivoJson(dirData + "patrones_silabicos.json");
-        string jsonHomofonos      = leerArchivoJson(dirData + "homofonos.json");
-        string jsonPalabrasRiesgo = leerArchivoJson(dirData + "palabras_riesgo.json");
-        string jsonSightWords     = leerArchivoJson(dirData + "sight_words.json");
-        string jsonFalsosPos      = leerArchivoJson(dirData + "falsos_positivos.json");
-        string jsonErroresTipicos = leerArchivoJson(dirData + "errores_tipicos.json");
- 
-        AnalizadorSemantico semantico(
-            ast,
-            jsonPonderacion,
-            jsonReglas,
-            jsonPares,
-            jsonSilabicos,
-            jsonHomofonos,
-            jsonPalabrasRiesgo,
-            jsonSightWords,
-            jsonFalsosPos,
-            jsonErroresTipicos
-        );
- 
-        ResultadoSemantico resultado = semantico.analizar();
-        semantico.imprimirReporte(resultado);
- 
-        semantico.escribirReporte(resultado, rutaSalida);
-        cout << GREEN << "\nReporte guardado en: " << rutaSalida << RESET << "\n";
-
-
-        // ─────────────────────────────────────
-        // RESUMEN FINAL
-        // ─────────────────────────────────────
-        imprimirSeparador("RESUMEN");
-
-        cout << "Errores lexicos: " << lexer.obtenerErrores().size() << "\n";
-        cout << "Errores sintacticos: " << parser.obtenerErrores().size() << "\n";
-        cout << "Palabras analizadas  : " << resultado.totalPalabrasAnalizables << "\n";
-        cout << "Palabras de riesgo   : " << resultado.palabrasRiesgo.size() << "\n";
-        cout << "Errores ortograficos : " << resultado.erroresOrtograficos.size() << "\n"; 
-        cout << "Indicador dislexico  : " << fixed << setprecision(2)
-             << resultado.indicadorPorcentual << "%  ("
-             << resultado.nivelIndicador << ")\n";
- 
-
-
-        if (!lexer.tieneErrores() && !parser.tieneErrores()) {
-
-            cout << GREEN
-                 << "\nAnalisis completado correctamente.\n"
-                 << RESET;
-        }
-        else {
-
-            cout << YELLOW
-                 << "\nAnalisis finalizado con errores.\n"
-                 << RESET;
-        }
-
-    }
-    catch (const exception& e) {
-        cerr << RED << "\nERROR FATAL: " << e.what() << RESET << "\n";
-        return 1;
-    }
-
-    return 0;
-}
-*/

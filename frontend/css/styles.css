@@ -1,4 +1,4 @@
-/* Reset y base */
+/* ====== RESET y BASE (se mantiene lo anterior) ====== */
 * {
   margin: 0;
   padding: 0;
@@ -11,7 +11,7 @@ body {
   color: #1e1e1e;
   line-height: 1.6;
   padding: 2rem;
-  max-width: 800px;
+  max-width: 900px;
   margin: 0 auto;
   background-image: radial-gradient(circle, #e0d6d0 1px, transparent 1px);
   background-size: 20px 20px;
@@ -39,21 +39,46 @@ header h1 {
   margin-bottom: 1.5rem;
 }
 
+/* ====== Selector de ejemplos ====== */
+.selector-area {
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.selector-area label {
+  font-weight: bold;
+}
+.selector-area select {
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  border-radius: 8px;
+  border: 1px solid #aaa;
+  background: white;
+  font-family: inherit;
+  flex: 1;
+  max-width: 300px;
+}
+
+/* ====== Reproductor de audio ====== */
 .audio-controls {
   display: flex;
   align-items: center;
   gap: 1rem;
   flex-wrap: wrap;
   margin-bottom: 1.5rem;
+  background: #eef3f7;
+  padding: 0.75rem 1.5rem;
+  border-radius: 40px;
 }
-
 .audio-controls button {
   background: #2b5b84;
   color: white;
   border: none;
-  padding: 0.75rem 1.5rem;
+  padding: 0.5rem 1.2rem;
   border-radius: 40px;
-  font-size: 1.1rem;
+  font-size: 1rem;
   cursor: pointer;
   transition: 0.2s;
   font-family: inherit;
@@ -62,47 +87,55 @@ header h1 {
   background: #1d3f5e;
   transform: scale(1.02);
 }
-
+.audio-controls #tiempoActual,
+.audio-controls #tiempoTotal {
+  font-variant-numeric: tabular-nums;
+  min-width: 3.5rem;
+  display: inline-block;
+}
 .speed-control {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  margin-left: auto;
 }
 .speed-control select {
-  padding: 0.4rem 0.8rem;
-  font-size: 1rem;
+  padding: 0.3rem 0.8rem;
+  font-size: 0.95rem;
   border-radius: 8px;
   border: 1px solid #aaa;
   background: white;
+  font-family: inherit;
 }
 
+/* ====== Área de texto ====== */
 .input-area {
   display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
+  flex-direction: column;
+  gap: 0.8rem;
   margin: 1.5rem 0;
-  align-items: center;
 }
 .input-area label {
-  flex: 1 0 100%;
+  font-weight: bold;
 }
-.input-area input {
-  flex: 2;
+.input-area textarea {
+  width: 100%;
   padding: 0.75rem 1rem;
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   border: 2px solid #ccc;
   border-radius: 12px;
   font-family: inherit;
-  min-width: 200px;
+  resize: vertical;
+  min-height: 120px;
 }
-.input-area input:focus {
+.input-area textarea:focus {
   border-color: #2b5b84;
   outline: none;
   box-shadow: 0 0 0 3px rgba(43, 91, 132, 0.3);
 }
 .input-area button {
-  flex: 0 0 auto;
-  padding: 0.75rem 2rem;
+  align-self: flex-start;
+  padding: 0.75rem 2.5rem;
   background: #1a7a5a;
   color: white;
   border: none;
@@ -115,7 +148,12 @@ header h1 {
 .input-area button:hover {
   background: #0f5a42;
 }
+.input-area button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
 
+/* ====== Resultados ====== */
 .resultados {
   margin-top: 2rem;
   padding: 1.5rem;
@@ -127,18 +165,27 @@ header h1 {
   display: none;
 }
 
-.palabra-esperada, .palabra-ingresada {
-  font-size: 1.8rem;
-  letter-spacing: 0.1em;
-  padding: 0.5rem 0;
-  border-bottom: 1px solid #e0e0e0;
+.texto-original {
+  font-size: 1.3rem;
+  line-height: 2;
+  padding: 0.8rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
-.palabra-esperada strong {
-  color: #2b5b84;
+.texto-original .error-highlight {
+  padding: 0.1rem 0.2rem;
+  border-radius: 4px;
+  font-weight: bold;
 }
-.palabra-ingresada strong {
-  color: #1a7a5a;
-}
+/* colores por tipo de error (se aplican a los spans) */
+.error-highlight.ROTACION_VISUAL { background: #f8d7da; color: #721c24; border-bottom: 3px solid #dc3545; }
+.error-highlight.INVERSION { background: #fff3cd; color: #856404; border-bottom: 3px solid #ffc107; }
+.error-highlight.OMISION { background: #d1ecf1; color: #0c5460; border-bottom: 3px solid #17a2b8; }
+.error-highlight.SUSTITUCION_FONETICA { background: #d4edda; color: #155724; border-bottom: 3px solid #28a745; }
+.error-highlight.OTRO { background: #e2e3e5; color: #383d41; border-bottom: 3px solid #6c757d; }
 
 .score {
   font-size: 1.2rem;
@@ -167,11 +214,9 @@ header h1 {
   border-bottom: 1px solid #f0f0f0;
   flex-wrap: wrap;
 }
-.errores-list .error-item .letra {
-  font-size: 1.5rem;
+.errores-list .error-item .palabra {
   font-weight: bold;
-  min-width: 2rem;
-  text-align: center;
+  min-width: 80px;
 }
 .errores-list .error-item .tipo {
   background: #e9ecef;
@@ -189,12 +234,6 @@ header h1 {
 .errores-list .error-item .audio-btn:hover {
   color: #1a3b5d;
 }
-/* Colores por tipo de error */
-.ROTACION_VISUAL { color: #e74c3c; }
-.INVERSION { color: #e67e22; }
-.OMISION { color: #f1c40f; }
-.SUSTITUCION_FONETICA { color: #8e44ad; }
-.OTRO { color: #7f8c8d; }
 
 .disclaimer-final {
   margin-top: 1.5rem;
@@ -207,12 +246,6 @@ header h1 {
 
 /* High contrast */
 @media (prefers-contrast: high) {
-  body {
-    background: #fff;
-  }
-  .container {
-    background: white;
-    box-shadow: none;
-    border: 2px solid black;
-  }
+  body { background: #fff; }
+  .container { background: white; box-shadow: none; border: 2px solid black; }
 }

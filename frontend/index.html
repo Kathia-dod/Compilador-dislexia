@@ -15,8 +15,20 @@
     </header>
 
     <main>
+      <!-- Selector de ejemplos -->
+      <section class="selector-area">
+        <label for="ejemploSelect">Selecciona un texto de ejemplo:</label>
+        <select id="ejemploSelect">
+          <option value="1">Ejemplo 1 – El perro y el oso</option>
+          <option value="2">Ejemplo 2 – El libro de Francisco</option>
+          <option value="3">Ejemplo 3 – La visita a la abuela</option>
+        </select>
+      </section>
+
+      <!-- Reproductor de audio -->
       <section class="audio-controls">
-        <button id="btnPlayAudio" aria-label="Reproducir palabra">▶ Reproducir</button>
+        <button id="btnPlayAudio" aria-label="Reproducir / Pausar">▶ Reproducir</button>
+        <span id="tiempoActual">0:00</span> / <span id="tiempoTotal">0:00</span>
         <div class="speed-control">
           <label for="speedSelect">Velocidad:</label>
           <select id="speedSelect">
@@ -25,18 +37,20 @@
             <option value="1.25">1.25x</option>
           </select>
         </div>
+        <audio id="audioPlayer" preload="metadata" style="display:none;"></audio>
       </section>
 
+      <!-- Área de texto -->
       <section class="input-area">
-        <label for="palabraInput">Escribe la palabra que escuchaste:</label>
-        <input type="text" id="palabraInput" placeholder="Ej: biblioteca" autofocus>
-        <button id="btnEnviar" class="primary">Analizar</button>
+        <label for="textoInput">Escribe o modifica el texto que escuchaste:</label>
+        <textarea id="textoInput" rows="6" placeholder="El texto aparecerá aquí al seleccionar un ejemplo..."></textarea>
+        <button id="btnAnalizar" class="primary">🔍 Analizar Texto</button>
       </section>
 
+      <!-- Resultados -->
       <section id="resultados" class="resultados hidden">
         <h2>Resultado del Análisis</h2>
-        <div id="palabraEsperadaDisplay" class="palabra-esperada"></div>
-        <div id="palabraIngresadaDisplay" class="palabra-ingresada"></div>
+        <div id="textoOriginalDisplay" class="texto-original"></div>
         <div id="scoreDisplay" class="score"></div>
         <div id="nivelDisplay" class="nivel"></div>
         <div id="erroresList" class="errores-list"></div>
